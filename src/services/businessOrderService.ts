@@ -114,19 +114,18 @@ export const createBusinessOrder = async (orderData: BusinessOrderData) => {
 
     console.log('✅ 余额扣除成功，新余额:', newBalance);
 
-    // 6. 确保users表中有对应记录（user_transactions.user_id引用users.id）
-    const { error: userUpsertError } = await supabase
+    // 6. 安全更新users表余额（只更新存在的记录）
+    const { error: userUpdateError } = await supabase
       .from('users')
-      .upsert({ 
-        id: orderData.userId,
+      .update({ 
         balance: newBalance,
         updated_at: new Date().toISOString()
-      }, { 
-        onConflict: 'id' 
-      });
+      })
+      .eq('id', orderData.userId);
 
-    if (userUpsertError) {
-      console.error("更新users表失败:", userUpsertError);
+    if (userUpdateError) {
+      console.error("更新users表余额失败:", userUpdateError);
+      // 用户余额更新失败不应该阻止交易记录创建，只记录错误
     }
 
     // 7. 创建交易记录 (业务充值 - 扣除余额)
