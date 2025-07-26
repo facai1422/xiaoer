@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>汇享生活 - APP下载</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 18px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .download-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 15px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .download-btn.secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e9ecef;
+        }
+        
+        .download-btn.secondary:hover {
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .instructions h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+        }
+        
+        .instructions li {
+            margin: 5px 0;
+        }
+        
+        .alert {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="app-icon">汇</div>
+        <h1>汇享生活</h1>
+        <p class="subtitle">便民生活服务平台</p>
+        
+        <div class="alert">
+            如果遇到安装问题，请使用下方的"直接访问"或"手动安装"方式
+        </div>
+        
+        <!-- 直接访问按钮 -->
+        <a href="https://vip8.netlify.app/" class="download-btn" target="_blank">
+            🌐 直接访问应用
+        </a>
+        
+        <!-- 描述文件安装 -->
+        <a href="./huixiang-app.mobileconfig" class="download-btn">
+            📱 安装到主屏幕 (iOS)
+        </a>
+        
+        <!-- 手动安装说明 -->
+        <button class="download-btn secondary" onclick="showInstructions()">
+            📖 手动安装说明
+        </button>
+        
+        <div class="instructions" id="instructions" style="display: none;">
+            <h3>手动安装步骤：</h3>
+            <ol>
+                <li>点击上方"直接访问应用"按钮</li>
+                <li>在Safari浏览器中打开应用</li>
+                <li>点击底部的"分享"按钮 📤</li>
+                <li>选择"添加到主屏幕"</li>
+                <li>点击"添加"完成安装</li>
+            </ol>
+            <br>
+            <p><strong>注意：</strong>请使用Safari浏览器进行安装，其他浏览器可能无法正常添加到主屏幕。</p>
+        </div>
+    </div>
+
+    <script>
+        function showInstructions() {
+            const instructions = document.getElementById('instructions');
+            if (instructions.style.display === 'none') {
+                instructions.style.display = 'block';
+            } else {
+                instructions.style.display = 'none';
+            }
+        }
+        
+        // 检测iOS设备
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent);
+        }
+        
+        // 如果不是iOS设备，隐藏描述文件安装按钮
+        if (!isIOS()) {
+            const configBtn = document.querySelector('a[href="./huixiang-app.mobileconfig"]');
+            if (configBtn) {
+                configBtn.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 

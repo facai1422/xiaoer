@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-disabled {
+            background-color: #6c757d;
+            color: white;
+            cursor: not-allowed;
+        }
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .debug-info {
+            margin-top: 20px;
+            font-size: 12px;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Supabase 登录测试</h1>
+        
+        <div class="form-group">
+            <label for="email">邮箱:</label>
+            <input type="email" id="email" value="vip@qq.com" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">密码:</label>
+            <input type="password" id="password" required>
+        </div>
+        
+        <button id="testBtn" class="btn-success" onclick="testConnection()">测试连接</button>
+        <button id="registerBtn" class="btn-secondary" onclick="testRegister()" style="background-color: #6c757d;">创建测试账号</button>
+        <button id="loginBtn" class="btn-primary" onclick="testLogin()">登录测试</button>
+        
+        <div id="message"></div>
+        
+        <div style="margin-top: 1rem; font-size: 0.75rem; color: #6b7280;">
+            <p><strong>🔍 问题解决过程:</strong></p>
+            <p>✅ 网络连接正常</p>
+            <p>✅ API可以正常访问</p>
+            <p>❌ 账号不存在或密码错误</p>
+            <p><strong>📋 解决方案:</strong></p>
+            <p>1. 先创建测试账号</p>
+            <p>2. 然后使用该账号登录</p>
+        </div>
+        
+        <div class="debug-info">
+            <strong>调试信息:</strong><br>
+            URL: https://wjvuuckoasdukmnbrzxk.supabase.co<br>
+            Key: sb_publishable_hjn8uDvuadUNMrM1jg5HHQ_37sGt-pr<br>
+            时间: <span id="timestamp"></span>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        
+        let isLoading = false;
+        
+        function showMessage(text, type = 'info') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="message ${type}">${text}</div>`;
+            console.log(`[${type.toUpperCase()}] ${text}`);
+        }
+        
+        function setLoading(loading) {
+            isLoading = loading;
+            const testBtn = document.getElementById('testBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const loginBtn = document.getElementById('loginBtn');
+            
+            if (loading) {
+                testBtn.className = 'btn-disabled';
+                registerBtn.className = 'btn-disabled';
+                loginBtn.className = 'btn-disabled';
+                testBtn.textContent = '测试中...';
+                registerBtn.textContent = '注册中...';
+                loginBtn.textContent = '登录中...';
+            } else {
+                testBtn.className = 'btn-success';
+                registerBtn.className = 'btn-secondary';
+                registerBtn.style.backgroundColor = '#6c757d';
+                loginBtn.className = 'btn-primary';
+                testBtn.textContent = '测试连接';
+                registerBtn.textContent = '创建测试账号';
+                loginBtn.textContent = '登录测试';
+            }
+        }
+        
+        async function testConnection() {
+            if (isLoading) return;
+            
+            setLoading(true);
+            showMessage('🔌 测试网络连接...', 'info');
+            
+            try {
+                console.log('🌐 开始测试网络连接');
+                
+                // 测试Auth API连接（这个不需要特殊权限）
+                const response = await fetch('https://wjvuuckoasdukmnbrzxk.supabase.co/auth/v1/settings', {
+                    method: 'GET',
+                    headers: {
+                        'apikey': 'sb_publishable_hjn8uDvuadUNMrM1jg5HHQ_37sGt-pr',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('📡 网络测试结果:', {
+                    status: response.status,
+                    ok: response.ok,
+                    headers: [...response.headers.entries()]
+                });
+                
+                if (response.ok) {
+                    showMessage('✅ 网络连接正常！可以尝试登录', 'success');
+                } else {
+                    showMessage(`❌ 网络连接失败: HTTP ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ 网络测试异常:', error);
+                showMessage(`❌ 网络异常: ${error.message}`, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        async function testRegister() {
+            if (isLoading) return;
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showMessage('❌ 请输入邮箱和密码', 'error');
+                return;
+            }
+            
+            setLoading(true);
+            showMessage('📝 开始创建测试账号...', 'info');
+            
+            try {
+                console.log('📝 开始注册请求:', { email, password: '***' });
+                
+                // 调用 Supabase 注册 API
+                const response = await fetch('https://wjvuuckoasdukmnbrzxk.supabase.co/auth/v1/signup', {
+                    method: 'POST',
+                    headers: {
+                        'apikey': 'sb_publishable_hjn8uDvuadUNMrM1jg5HHQ_37sGt-pr',
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer sb_publishable_hjn8uDvuadUNMrM1jg5HHQ_37sGt-pr'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                console.log('📡 注册请求响应:', {
+                    status: response.status,
+                    ok: response.ok,
+                    statusText: response.statusText
+                });
+                
+                const data = await response.json();
+                console.log('📋 注册响应数据:', data);
+                
+                if (response.ok && data.user) {
+                    showMessage(`✅ 账号创建成功！现在可以登录了`, 'success');
+                    console.log('✅ 注册成功:', {
+                        userId: data.user?.id,
+                        email: data.user?.email
+                    });
+                } else {
+                    const errorMsg = data.error_description || data.msg || data.message || '未知错误';
+                    showMessage(`❌ 创建失败: ${errorMsg}`, 'error');
+                    console.log('❌ 注册失败:', data);
+                }
+                
+            } catch (error) {
+                console.error('❌ 注册异常:', error);
+                showMessage(`❌ 注册异常: ${error.message}`, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function testLogin() {
+            if (isLoading) return;
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showMessage('❌ 请输入邮箱和密码', 'error');
+                return;
+            }
+            
+            setLoading(true);
+            showMessage('🔐 开始登录测试...', 'info');
+            
+            try {
+                console.log('🔐 开始登录请求:', { email, password: '***' });
+                
+                // 直接使用 fetch 调用 Supabase Auth API
+                const response = await fetch('https://wjvuuckoasdukmnbrzxk.supabase.co/auth/v1/token?grant_type=password', {
+                    method: 'POST',
+                    headers: {
+                        'apikey': 'sb_publishable_hjn8uDvuadUNMrM1jg5HHQ_37sGt-pr',
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer sb_publishable_hjn8uDvuadUNMrM1jg5HHQ_37sGt-pr'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                console.log('📡 登录请求响应:', {
+                    status: response.status,
+                    ok: response.ok,
+                    statusText: response.statusText
+                });
+                
+                const data = await response.json();
+                console.log('📋 登录响应数据:', data);
+                
+                if (response.ok && data.access_token) {
+                    showMessage(`✅ 登录成功！用户: ${data.user?.email || 'Unknown'}`, 'success');
+                    console.log('✅ 登录成功:', {
+                        userId: data.user?.id,
+                        email: data.user?.email,
+                        hasToken: !!data.access_token
+                    });
+                } else {
+                    const errorMsg = data.error_description || data.msg || data.message || '未知错误';
+                    showMessage(`❌ 登录失败: ${errorMsg}`, 'error');
+                    console.log('❌ 登录失败:', data);
+                }
+                
+            } catch (error) {
+                console.error('❌ 登录异常:', error);
+                showMessage(`❌ 登录异常: ${error.message}`, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // 监听回车键
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !isLoading) {
+                testLogin();
+            }
+        });
+        
+        console.log('🚀 登录测试页面已加载');
+        showMessage('页面已加载，可以开始测试', 'info');
+    </script>
+</body>
+</html> 

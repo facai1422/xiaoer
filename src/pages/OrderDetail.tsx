@@ -1,0 +1,505 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle } from "lucide-react";
+import { toast } from "sonner";
+import { getOrderDetail } from "@/services/businessOrderService";
+import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
+
+interface OrderInfo {
+  id: string;
+  order_number: string;
+  name: string | null;
+  phone_number: string;
+  target_account: string;
+  amount: number;
+  actual_amount: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  payment_method: string;
+  payment_channel: string;
+  user_name: string;
+  metadata: Json;
+}
+
+// 定义metadata的类型接口
+interface OrderMetadata {
+  name?: string;
+  cardNumber?: string;
+  bankName?: string;
+  qrCode?: string;
+  account?: string;
+  gameType?: string;
+  phone?: string;
+  company?: string;
+  customerName?: string;
+  exchange_rate?: number;
+  discount?: string;
+  [key: string]: string | number | boolean | undefined;
+}
+
+const OrderDetail = () => {
+  const { orderId } = useParams();
+  const navigate = useNavigate();
+  const [order, setOrder] = useState<OrderInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (orderId) {
+      loadOrderDetail();
+    }
+  }, [orderId]);
+
+  const loadOrderDetail = async () => {
+    try {
+      setIsLoading(true);
+      
+      // 检查登录状态
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("请先登录");
+        navigate("/login");
+        return;
+      }
+
+      const orderData = await getOrderDetail(orderId!);
+      
+      // 验证订单是否属于当前用户
+      if (orderData.user_id !== session.user.id) {
+        toast.error("无权查看此订单");
+        navigate("/orders");
+        return;
+      }
+
+      setOrder(orderData);
+    } catch (error) {
+      console.error("加载订单详情失败:", error);
+      toast.error("加载订单详情失败");
+      navigate("/orders");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+      case 'confirmed':
+      case '成功':
+        return <CheckCircle className="w-16 h-16 text-green-500" />;
+      case 'pending':
+      case 'proof_uploaded':
+      case 'transferred':
+      case '处理中':
+        return <Clock className="w-16 h-16 text-yellow-500" />;
+      case 'failed':
+      case 'cancelled':
+      case '失败':
+        return <XCircle className="w-16 h-16 text-red-500" />;
+      default:
+        return <Package className="w-16 h-16 text-gray-500" />;
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return '充值成功';
+      case 'confirmed':
+        return '充值成功';
+      case 'pending':
+        return '待处理';
+      case 'processing':
+        return '处理中';
+      case 'proof_uploaded':
+        return '处理中';
+      case 'transferred':
+        return '已转账';
+      case 'failed':
+      case 'cancelled':
+        return '已取消';
+      default:
+        return status;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+      case 'confirmed':
+      case '成功':
+        return 'text-green-600';
+      case 'pending':
+      case 'proof_uploaded':
+      case 'transferred':
+      case '处理中':
+        return 'text-yellow-600';
+      case 'failed':
+      case 'cancelled':
+      case '失败':
+        return 'text-red-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
+  const getPaymentChannelName = (channel: string) => {
+    switch (channel) {
+      case 'balance':
+        return '余额支付';
+      case 'default':
+        return 'USDT支付';
+      case 'usdt':
+        return 'USDT支付';
+      case 'alipay':
+        return '支付宝';
+      case 'wechat':
+        return '微信支付';
+      case 'bank':
+        return '银行卡';
+      default:
+        return channel || 'USDT支付';
+    }
+  };
+
+  // 计算汇率
+  const calculateExchangeRate = (order: OrderInfo) => {
+    if (order.amount > 0 && order.actual_amount > 0) {
+      return (order.amount / order.actual_amount).toFixed(2);
+    }
+    return null;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">订单不存在</p>
+          <Button 
+            className="mt-4"
+            onClick={() => navigate('/orders')}
+          >
+            返回订单列表
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* 头部 */}
+      <div className="bg-white p-4 flex items-center shadow-sm">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          返回
+        </Button>
+        <h1 className="text-lg font-semibold ml-4">订单详情</h1>
+      </div>
+
+      {/* 订单状态 */}
+      <div className="p-4">
+        <Card className="p-6">
+          <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center">
+              {getStatusIcon(order.status)}
+              <h2 className={`text-2xl font-semibold mt-4 ${getStatusColor(order.status)}`}>
+                {getStatusText(order.status)}
+              </h2>
+            </div>
+            <p className="text-gray-500 mt-2">订单号: {order.order_number}</p>
+          </div>
+        </Card>
+      </div>
+
+      {/* 订单信息 */}
+      <div className="px-4 pb-4">
+        <Card className="p-6">
+          <h3 className="font-semibold mb-4">订单信息</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">业务类型</span>
+              <span className="font-medium">{order.name || order.payment_method}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">充值账号</span>
+              <span className="font-medium">{order.target_account}</span>
+            </div>
+            {order.user_name && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">账号名称</span>
+                <span className="font-medium">{order.user_name}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-gray-600">充值金额</span>
+              <span className="font-medium">¥{order.amount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">实付金额</span>
+              <span className="font-medium text-lg text-blue-600">{order.actual_amount.toFixed(2)} USDT</span>
+            </div>
+            {/* 显示汇率信息 - 优先使用metadata中的汇率，否则计算汇率 */}
+            {(() => {
+              const metadata = order.metadata as OrderMetadata;
+              const exchangeRate = metadata?.exchange_rate || calculateExchangeRate(order);
+              if (exchangeRate) {
+                return (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">汇率</span>
+                    <span className="font-medium text-green-600">1 USDT = ¥{exchangeRate}</span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            {order.metadata && typeof order.metadata === 'object' && (order.metadata as OrderMetadata)?.discount && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">优惠信息</span>
+                <span className="font-medium text-green-600">{(order.metadata as OrderMetadata).discount}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-gray-600">支付方式</span>
+              <span className="font-medium">{getPaymentChannelName(order.payment_channel)}</span>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* 业务表单信息 */}
+      {order.metadata && typeof order.metadata === 'object' && (
+        <div className="px-4 pb-4">
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4">表单信息</h3>
+            <div className="space-y-3">
+              {(() => {
+                const metadata = order.metadata as OrderMetadata;
+                return (
+                  <>
+                    {/* 信用卡代还表单信息 */}
+                    {(order.payment_method === '信用卡还款' || order.payment_method?.includes('信用卡')) && (
+                      <>
+                        {metadata?.name && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">持卡人姓名</span>
+                            <span className="font-medium">{metadata.name}</span>
+                          </div>
+                        )}
+                        {metadata?.cardNumber && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">信用卡号</span>
+                            <span className="font-medium">{metadata.cardNumber}</span>
+                          </div>
+                        )}
+                        {metadata?.bankName && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">开户银行</span>
+                            <span className="font-medium">{metadata.bankName}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* 花呗代还表单信息 */}
+                    {(order.payment_method === '花呗还款' || order.payment_method?.includes('花呗')) && (
+                      <>
+                        {metadata?.name && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">支付宝姓名</span>
+                            <span className="font-medium">{metadata.name}</span>
+                          </div>
+                        )}
+                        {metadata?.qrCode && (
+                          <div className="space-y-2">
+                            <span className="text-gray-600 block">花呗二维码</span>
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              {/* 检查是否为图片URL */}
+                              {(metadata.qrCode.startsWith('http') || metadata.qrCode.startsWith('data:image') || metadata.qrCode.startsWith('blob:')) ? (
+                                <div className="text-center">
+                                  <img 
+                                    src={metadata.qrCode} 
+                                    alt="花呗二维码" 
+                                    className="max-w-full h-auto max-h-64 mx-auto rounded-lg border shadow-sm"
+                                    onError={(e) => {
+                                      // 如果图片加载失败，隐藏图片显示错误信息
+                                      const imgElement = e.currentTarget as HTMLImageElement;
+                                      const parent = imgElement.parentElement;
+                                      if (parent) {
+                                        parent.innerHTML = `
+                                          <div class="text-center py-4">
+                                            <div class="w-16 h-16 bg-gray-200 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                                              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                              </svg>
+                                            </div>
+                                            <p class="text-sm text-gray-500">二维码图片</p>
+                                          </div>
+                                        `;
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="text-center py-4">
+                                  <div className="w-16 h-16 bg-gray-200 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
+                                  <p className="text-sm text-gray-500">二维码图片</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* 抖音/快手币充值表单信息 */}
+                    {(order.payment_method?.includes('抖') || order.payment_method?.includes('快')) && (
+                      <>
+                        {metadata?.account && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">账号</span>
+                            <span className="font-medium">{metadata.account}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* 网易游戏表单信息 */}
+                    {order.payment_method?.includes('网易') && (
+                      <>
+                        {metadata?.gameType && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">游戏类型</span>
+                            <span className="font-medium">{metadata.gameType}</span>
+                          </div>
+                        )}
+                        {metadata?.account && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">游戏账号</span>
+                            <span className="font-medium">{metadata.account}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* 话费充值表单信息 */}
+                    {(order.payment_method === '话费充值' || order.payment_method?.includes('话费')) && (
+                      <>
+                        {metadata?.phone && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">充值手机号</span>
+                            <span className="font-medium">{metadata.phone}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* 燃气缴费表单信息 */}
+                    {order.payment_method?.includes('燃气') && (
+                      <>
+                        {metadata?.account && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">燃气户号</span>
+                            <span className="font-medium">{metadata.account}</span>
+                          </div>
+                        )}
+                        {metadata?.company && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">燃气公司</span>
+                            <span className="font-medium">{metadata.company}</span>
+                          </div>
+                        )}
+                        {metadata?.customerName && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">户主姓名</span>
+                            <span className="font-medium">{metadata.customerName}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* 时间信息 */}
+      <div className="px-4 pb-4">
+        <Card className="p-6">
+          <h3 className="font-semibold mb-4">时间信息</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">创建时间</span>
+              <span className="text-sm">{formatDate(order.created_at)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">更新时间</span>
+              <span className="text-sm">{formatDate(order.updated_at)}</span>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* 操作按钮 */}
+      <div className="px-4 pb-8">
+        <div className="space-y-3">
+          <Button 
+            className="w-full"
+            onClick={() => navigate('/orders')}
+          >
+            返回订单列表
+          </Button>
+          {order.status === 'pending' && (
+            <Button 
+              variant="outline"
+              className="w-full"
+              onClick={() => toast.info("请耐心等待，订单正在处理中")}
+            >
+              联系客服
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default OrderDetail;

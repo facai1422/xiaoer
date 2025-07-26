@@ -1,0 +1,167 @@
+/* 全局禁用所有Dialog组件的拖拽 */
+[data-radix-dialog-content],
+[role="dialog"],
+.dialog-content-fixed,
+.dialog-content-fixed * {
+  -webkit-user-drag: none !important;
+  -khtml-user-drag: none !important;
+  -moz-user-drag: none !important;
+  -o-user-drag: none !important;
+  user-drag: none !important;
+  -webkit-app-region: no-drag !important;
+  app-region: no-drag !important;
+  draggable: false !important;
+}
+
+/* 专门针对弹窗内容的拖拽禁用 */
+.dialog-content-fixed {
+  /* 禁用所有可能的拖拽行为 */
+  -webkit-user-drag: none !important;
+  -khtml-user-drag: none !important;
+  -moz-user-drag: none !important;
+  -o-user-drag: none !important;
+  user-drag: none !important;
+  /* 确保位置完全固定 */
+  will-change: auto !important;
+  /* 禁用transform相关的拖拽 */
+  -webkit-transform-style: flat !important;
+  transform-style: flat !important;
+}
+
+/* 固定弹窗样式 - 统一设置所有弹窗在中间固定位置 */
+.dialog-content-fixed {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  z-index: 50 !important;
+  background: linear-gradient(145deg, #ffffff, #f8fafc) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  border: none !important;
+  border-radius: 16px !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  -khtml-user-drag: none !important;
+  -moz-user-drag: none !important;
+  -o-user-drag: none !important;
+  user-drag: none !important;
+  /* 禁用所有拖拽相关的事件 */
+  -webkit-app-region: no-drag !important;
+  app-region: no-drag !important;
+  /* 禁用触摸拖拽 */
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  touch-action: none !important;
+}
+
+/* 彻底禁用弹窗标题栏的拖拽功能 */
+.dialog-content-fixed [data-radix-dialog-content] {
+  -webkit-user-drag: none !important;
+  -moz-user-drag: none !important;
+  user-drag: none !important;
+  -webkit-app-region: no-drag !important;
+  app-region: no-drag !important;
+}
+
+/* 禁用弹窗头部所有拖拽功能 */
+.dialog-content-fixed .dialog-header,
+.dialog-content-fixed [role="dialog"],
+.dialog-content-fixed h2,
+.dialog-content-fixed h3,
+.dialog-content-fixed [data-radix-dialog-title] {
+  -webkit-user-drag: none !important;
+  -moz-user-drag: none !important;
+  user-drag: none !important;
+  -webkit-app-region: no-drag !important;
+  app-region: no-drag !important;
+  cursor: default !important;
+  pointer-events: auto !important;
+}
+
+/* 确保弹窗背景遮罩层正确显示 */
+.dialog-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 50 !important;
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* 允许弹窗内的表单元素和按钮正常交互 */
+.dialog-content-fixed input,
+.dialog-content-fixed textarea,
+.dialog-content-fixed button,
+.dialog-content-fixed select,
+.dialog-content-fixed a,
+.dialog-content-fixed label {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+  pointer-events: auto !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+}
+
+/* 弹窗标题样式 */
+.dialog-content-fixed .dialog-header {
+  cursor: default !important;
+}
+
+.dialog-content-fixed .dialog-header * {
+  pointer-events: auto !important;
+}
+
+/* 波浪动画样式 */
+@keyframes move-forever {
+  0% {
+    transform: translate3d(-90px, 0, 0);
+  }
+  100% {
+    transform: translate3d(85px, 0, 0);
+  }
+}
+
+.waves > use {
+  animation: move-forever 25s cubic-bezier(.55,.5,.45,.5) infinite;
+}
+
+.waves > use:nth-child(1) {
+  animation-delay: -2s;
+  animation-duration: 7s;
+}
+
+.waves > use:nth-child(2) {
+  animation-delay: -3s;
+  animation-duration: 10s;
+}
+
+.waves > use:nth-child(3) {
+  animation-delay: -4s;
+  animation-duration: 13s;
+}
+
+.waves > use:nth-child(4) {
+  animation-delay: -5s;
+  animation-duration: 20s;
+}
+
+/* 网站公告横向滚动动画 */
+@keyframes marquee {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee linear infinite;
+} 

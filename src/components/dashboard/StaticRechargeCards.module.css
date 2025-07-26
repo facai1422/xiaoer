@@ -1,0 +1,256 @@
+/* 慢速旋转动画 */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rotatingBorder {
+  animation: spin-slow 8s linear infinite;
+}
+
+.rotatingBorderBlur {
+  animation: spin-slow 8s linear infinite;
+}
+
+/* 彩色渐变边框 */
+.gradientBorder {
+  background: linear-gradient(45deg, 
+    #ff0080, 
+    #ff8c00, 
+    #40e0d0, 
+    #ff0080, 
+    #8a2be2, 
+    #00ff00, 
+    #ff1493, 
+    #00bfff
+  );
+  background-size: 400% 400%;
+}
+
+/* 边框动画变体 */
+.gradientBorder1 {
+  background: linear-gradient(45deg, 
+    #ff6b6b, 
+    #4ecdc4, 
+    #45b7d1, 
+    #96ceb4, 
+    #ffeaa7, 
+    #fd79a8
+  );
+  background-size: 300% 300%;
+}
+
+.gradientBorder2 {
+  background: linear-gradient(45deg, 
+    #a8e6cf, 
+    #dcedc1, 
+    #ffd3a5, 
+    #fd9853, 
+    #ff8a80, 
+    #ea80fc
+  );
+  background-size: 300% 300%;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  padding: 0;
+  justify-items: stretch;
+}
+
+.card {
+  --background: linear-gradient(to left, #a5c1e7 0%, #9b59b6 100%);
+  width: 100%;
+  height: 240px;
+  padding: 8px;
+  border-radius: 1rem;
+  overflow: visible;
+  background: #a5c1e7;
+  background: var(--background);
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.card:nth-child(1) {
+  --background: linear-gradient(to left, #667eea 0%, #764ba2 100%);
+}
+
+.card:nth-child(2) {
+  --background: linear-gradient(to left, #f093fb 0%, #f5576c 100%);
+}
+
+.card::after {
+  position: absolute;
+  content: "";
+  top: 30px;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  height: 100%;
+  width: 100%;
+  transform: scale(0.85);
+  filter: blur(25px);
+  background: #a5c1e7;
+  background: var(--background);
+  transition: opacity 0.5s;
+}
+
+.card:nth-child(1)::after {
+  background: linear-gradient(to left, #667eea 0%, #764ba2 100%);
+}
+
+.card:nth-child(2)::after {
+  background: linear-gradient(to left, #f093fb 0%, #f5576c 100%);
+}
+
+.cardInfo {
+  --color: #ffffff;
+  background: var(--color);
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  border-radius: 0.6rem;
+  padding: 1rem;
+  transition: color 1s;
+  position: relative;
+}
+
+.cardImage {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 0.5rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.cardContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.title {
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  text-align: center;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  color: #333;
+}
+
+.discount {
+  font-size: 0.8rem;
+  text-align: center;
+  opacity: 0.7;
+  letter-spacing: 0.05em;
+  color: #666;
+}
+
+.chargeButton {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 20px !important;
+  padding: 8px 24px !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3) !important;
+  margin-top: 0.5rem !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+.chargeButton:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4) !important;
+}
+
+.chargeButton:active {
+  transform: translateY(0) !important;
+}
+
+/* Hover Effects */
+.card:hover {
+  transform: translateY(-3px);
+}
+
+.card:hover::after {
+  opacity: 0;
+}
+
+.card:hover .cardInfo {
+  color: #667eea;
+  transition: color 1s;
+}
+
+.card:nth-child(2):hover .cardInfo {
+  color: #f093fb;
+  transition: color 1s;
+}
+
+.card:hover .title {
+  color: #667eea;
+}
+
+.card:nth-child(2):hover .title {
+  color: #f093fb;
+}
+
+.card:hover .discount {
+  color: #667eea;
+  opacity: 0.8;
+}
+
+.card:nth-child(2):hover .discount {
+  color: #f093fb;
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .container {
+    gap: 0.4rem;
+  }
+  
+  .card {
+    height: 200px;
+    padding: 6px;
+  }
+  
+  .cardImage {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 0.4rem;
+  }
+  
+  .title {
+    font-size: 0.9rem;
+  }
+  
+  .discount {
+    font-size: 0.75rem;
+  }
+  
+  .chargeButton {
+    padding: 6px 20px !important;
+    font-size: 0.8rem !important;
+  }
+} 

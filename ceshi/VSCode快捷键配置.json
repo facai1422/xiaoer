@@ -1,0 +1,50 @@
+[
+  {
+    // MCP Supabase 服务器快捷键配置
+    // 将以下配置添加到 VSCode 的 keybindings.json 文件中
+    
+    // 启动 MCP Supabase 服务器
+    "key": "ctrl+alt+s",
+    "command": "workbench.action.terminal.sendSequence",
+    "args": { 
+      "text": "node .cursor/mcp-server.js\u000D" 
+    },
+    "when": "terminalFocus"
+  },
+  {
+    // 停止当前运行的进程（Ctrl+C）
+    "key": "ctrl+alt+x",
+    "command": "workbench.action.terminal.sendSequence",
+    "args": { 
+      "text": "\u0003" 
+    },
+    "when": "terminalFocus"
+  },
+  {
+    // 测试 MCP 服务器
+    "key": "ctrl+alt+t",
+    "command": "workbench.action.terminal.sendSequence",
+    "args": { 
+      "text": "node ceshi/测试MCP服务器.js\u000D" 
+    },
+    "when": "terminalFocus"
+  },
+  {
+    // 运行启动脚本（Windows）
+    "key": "ctrl+alt+b",
+    "command": "workbench.action.terminal.sendSequence",
+    "args": { 
+      "text": "ceshi\\MCP服务器启动脚本.bat\u000D" 
+    },
+    "when": "terminalFocus && isWindows"
+  },
+  {
+    // 清除终端并启动 MCP 服务器
+    "key": "ctrl+alt+shift+s",
+    "command": "workbench.action.terminal.sendSequence",
+    "args": { 
+      "text": "cls && node .cursor/mcp-server.js\u000D" 
+    },
+    "when": "terminalFocus && isWindows"
+  }
+] 

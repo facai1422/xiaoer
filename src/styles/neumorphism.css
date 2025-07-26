@@ -1,0 +1,438 @@
+/* ================================
+   新拟态主题样式系统 - 优化版
+   ================================ */
+
+:root {
+  /* 新拟态主色系 - 更明亮的配色 */
+  --neu-bg-primary: linear-gradient(145deg, #ffffff, #f8fafc);
+  --neu-bg-secondary: linear-gradient(145deg, #ffffff, #f1f5f9);
+  --neu-bg-tertiary: linear-gradient(145deg, #f8fafc, #f1f5f9);
+  --neu-bg-accent: linear-gradient(145deg, #e0f2fe, #b3e5fc);
+  --neu-bg-success: linear-gradient(145deg, #f0fff4, #dcfce7);
+  --neu-bg-warning: linear-gradient(145deg, #fffbeb, #fef3c7);
+  --neu-bg-danger: linear-gradient(145deg, #fef2f2, #fee2e2);
+  
+  /* 新拟态阴影系统 - 柔和但清晰 */
+  --neu-shadow-primary: 
+    6px 6px 12px rgba(148, 163, 184, 0.25),
+    -6px -6px 12px rgba(255, 255, 255, 0.9);
+  
+  --neu-shadow-secondary: 
+    3px 3px 6px rgba(148, 163, 184, 0.2),
+    -3px -3px 6px rgba(255, 255, 255, 0.8);
+  
+  --neu-shadow-small: 
+    2px 2px 4px rgba(148, 163, 184, 0.2),
+    -2px -2px 4px rgba(255, 255, 255, 0.8);
+  
+  --neu-shadow-inset: 
+    inset 3px 3px 6px rgba(148, 163, 184, 0.2),
+    inset -3px -3px 6px rgba(255, 255, 255, 0.8);
+  
+  --neu-shadow-inset-deep: 
+    inset 4px 4px 8px rgba(148, 163, 184, 0.25),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.9);
+  
+  --neu-shadow-hover: 
+    8px 8px 16px rgba(148, 163, 184, 0.3),
+    -8px -8px 16px rgba(255, 255, 255, 0.9);
+  
+  --neu-shadow-active: 
+    inset 4px 4px 8px rgba(148, 163, 184, 0.3),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.8);
+  
+  /* 文字颜色 - 高对比度 */
+  --neu-text-primary: #1a202c;
+  --neu-text-secondary: #2d3748;
+  --neu-text-muted: #4a5568;
+  --neu-text-accent: #2563eb;
+  
+  /* 动画时间 */
+  --neu-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --neu-transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --neu-transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ================================
+   新拟态基础组件类 - 优化版
+   ================================ */
+
+.neu-container {
+  background: var(--neu-bg-primary);
+  border-radius: 24px;
+  box-shadow: var(--neu-shadow-primary);
+  transition: var(--neu-transition);
+  color: var(--neu-text-primary);
+}
+
+.neu-card {
+  background: var(--neu-bg-secondary);
+  border-radius: 16px;
+  box-shadow: var(--neu-shadow-secondary);
+  transition: var(--neu-transition);
+  overflow: hidden;
+  color: var(--neu-text-primary);
+}
+
+.neu-card:hover {
+  box-shadow: var(--neu-shadow-hover);
+  transform: translateY(-2px);
+}
+
+.neu-button {
+  background: var(--neu-bg-tertiary);
+  border-radius: 12px;
+  box-shadow: var(--neu-shadow-secondary);
+  border: none;
+  padding: 12px 24px;
+  transition: var(--neu-transition);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  color: var(--neu-text-primary);
+  font-weight: 600;
+}
+
+.neu-button:hover {
+  box-shadow: var(--neu-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.neu-button:active {
+  box-shadow: var(--neu-shadow-active);
+  transform: translateY(0);
+}
+
+.neu-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s;
+}
+
+.neu-button:hover::before {
+  left: 100%;
+}
+
+.neu-input {
+  background: var(--neu-bg-secondary);
+  border-radius: 12px;
+  box-shadow: var(--neu-shadow-inset);
+  border: none;
+  padding: 12px 16px;
+  transition: var(--neu-transition);
+  outline: none;
+  color: var(--neu-text-primary);
+  font-weight: 500;
+}
+
+.neu-input:focus {
+  box-shadow: 
+    var(--neu-shadow-inset),
+    0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.neu-input::placeholder {
+  color: var(--neu-text-muted);
+  font-weight: 400;
+}
+
+.neu-panel {
+  background: var(--neu-bg-secondary);
+  border-radius: 20px;
+  box-shadow: var(--neu-shadow-inset-deep);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  color: var(--neu-text-primary);
+}
+
+.neu-sidebar {
+  background: var(--neu-bg-primary);
+  box-shadow: var(--neu-shadow-inset-deep);
+  position: relative;
+  overflow: hidden;
+}
+
+.neu-nav-item {
+  background: var(--neu-bg-tertiary);
+  border-radius: 12px;
+  box-shadow: var(--neu-shadow-small);
+  transition: var(--neu-transition);
+  position: relative;
+  overflow: hidden;
+  color: var(--neu-text-secondary);
+  font-weight: 600;
+}
+
+.neu-nav-item:hover {
+  background: var(--neu-bg-accent);
+  box-shadow: var(--neu-shadow-secondary);
+  transform: translateX(4px);
+  color: var(--neu-text-accent);
+}
+
+.neu-nav-item.active {
+  background: var(--neu-bg-accent);
+  box-shadow: var(--neu-shadow-active);
+  color: var(--neu-text-accent);
+  font-weight: 700;
+}
+
+/* ================================
+   新拟态颜色变体 - 优化版
+   ================================ */
+
+.neu-primary {
+  background: var(--neu-bg-accent);
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.neu-success {
+  background: var(--neu-bg-success);
+  color: #059669;
+  font-weight: 600;
+}
+
+.neu-warning {
+  background: var(--neu-bg-warning);
+  color: #d97706;
+  font-weight: 600;
+}
+
+.neu-danger {
+  background: var(--neu-bg-danger);
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* ================================
+   动画效果
+   ================================ */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+}
+
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+/* 彩色动态边框动画 */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  25% { background-position: 100% 50%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ================================
+   动画应用类
+   ================================ */
+
+.neu-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.neu-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.neu-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.neu-slide-in {
+  animation: slide-in-up 0.5s ease-out;
+}
+
+.neu-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.neu-bounce {
+  animation: bounce 1s ease-out;
+}
+
+.neu-rotate {
+  animation: rotate 2s linear infinite;
+}
+
+.neu-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--neu-bg-secondary),
+    rgba(255, 255, 255, 0.8),
+    var(--neu-bg-secondary)
+  );
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ================================
+   响应式和交互状态 - 优化版
+   ================================ */
+
+.neu-interactive {
+  cursor: pointer;
+  transition: var(--neu-transition);
+}
+
+.neu-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--neu-shadow-hover);
+}
+
+.neu-interactive:active {
+  transform: translateY(0);
+  box-shadow: var(--neu-shadow-active);
+}
+
+.neu-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.neu-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+/* ================================
+   文字样式优化
+   ================================ */
+
+.neu-text-primary {
+  color: var(--neu-text-primary);
+  font-weight: 600;
+}
+
+.neu-text-secondary {
+  color: var(--neu-text-secondary);
+  font-weight: 500;
+}
+
+.neu-text-muted {
+  color: var(--neu-text-muted);
+  font-weight: 400;
+}
+
+.neu-text-accent {
+  color: var(--neu-text-accent);
+  font-weight: 600;
+}
+
+/* ================================
+   响应式断点
+   ================================ */
+
+@media (max-width: 768px) {
+  .neu-container {
+    border-radius: 16px;
+    box-shadow: var(--neu-shadow-small);
+  }
+  
+  .neu-card {
+    border-radius: 12px;
+  }
+  
+  .neu-button {
+    border-radius: 8px;
+    padding: 8px 16px;
+  }
+}
+
+/* ================================
+   确保始终使用明亮主题
+   ================================ */
+
+/* 移除暗色主题，确保界面始终明亮清晰 */
+body {
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  color: var(--neu-text-primary);
+}
+
+/* 强制覆盖任何可能的暗色样式 */
+* {
+  color-scheme: light;
+}
+
+/* 确保所有文本都有足够的对比度 */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--neu-text-primary);
+  font-weight: 700;
+}
+
+p, span, div {
+  color: var(--neu-text-secondary);
+}
+
+/* 表格样式优化 */
+table {
+  color: var(--neu-text-primary);
+}
+
+th {
+  color: var(--neu-text-primary);
+  font-weight: 700;
+}
+
+td {
+  color: var(--neu-text-secondary);
+} 

@@ -1,0 +1,14 @@
+# Netlify重定向规则 - 支持SPA路由
+/* /index.html 200
+
+# API请求不重定向
+/api/* /api/:splat 200
+
+# 静态资源不重定向  
+/assets/* /assets/:splat 200
+/images/* /images/:splat 200
+/lovable-uploads/* /lovable-uploads/:splat 200
+
+# APP封装文件
+/yimen-app.html /yimen-app.html 200
+/clip-426251-35739.html /clip-426251-35739.html 200
