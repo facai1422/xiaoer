@@ -67,17 +67,17 @@ const OrderDetail = () => {
 
       const orderData = await getOrderDetail(orderId!);
       
-      // 验证订单是否属于当前用户
-      if (orderData.user_id !== session.user.id) {
-        toast.error("无权查看此订单");
-        navigate("/orders");
-        return;
-      }
-
+      // RLS策略已经确保用户只能查看自己的订单，无需额外权限检查
       setOrder(orderData);
     } catch (error) {
       console.error("加载订单详情失败:", error);
-      toast.error("加载订单详情失败");
+      
+      // 如果是权限问题或订单不存在，给出友好提示
+      if (error?.message?.includes('PGRST116') || error?.message?.includes('permission') || error?.message?.includes('access')) {
+        toast.error("无权查看此订单");
+      } else {
+        toast.error("加载订单详情失败");
+      }
       navigate("/orders");
     } finally {
       setIsLoading(false);
