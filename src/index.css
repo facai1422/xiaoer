@@ -6,66 +6,70 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 47.4% 11.2%;
+    --foreground: 0 0% 0%;
 
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 0 0% 45%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 0 0% 0%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
+    --card-foreground: 0 0% 0%;
 
-    --primary: 239 84% 67%;
+    --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 46%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 0 0% 0%;
 
-    --accent: 220 14% 96%;
-    --accent-foreground: 220 9% 46%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 0 0% 0%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
 
     --ring: 215 20.2% 65.1%;
 
     --radius: 0.5rem;
+    
+    /* 新拟态颜色变量覆盖 - 确保文字可见 */
+    --neu-text-primary: #000000 !important;
+    --neu-text-secondary: #333333 !important;
+    --neu-text-muted: #666666 !important;
+    --neu-text-accent: #1d4ed8 !important;
   }
 
+  /* 强制禁用暗色主题，使用明亮主题 */
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
 
-    --muted: 223 47% 11%;
-    --muted-foreground: 215.4 16.3% 56.9%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 216 34% 17%;
-    --accent-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
 
-    --popover: 224 71% 4%;
-    --popover-foreground: 215 20.2% 65.1%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
 
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
 
-    --card: 224 71% 4%;
-    --card-foreground: 213 31% 91%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 0 0% 100%;
 
-    --primary: 239 84% 67%;
-    --primary-foreground: 224 71% 4%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 0 0% 0%;
 
-    --secondary: 223 47% 11%;
-    --secondary-foreground: 213 31% 91%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-
-    --ring: 216 34% 17%;
+    --ring: 215 20.2% 65.1%;
 
     --radius: 0.5rem;
   }
@@ -88,22 +92,120 @@
   /* 修复所有按钮变体的背景显示问题 */
   .bg-primary {
     background-color: hsl(var(--primary)) !important;
+    color: white !important;
     opacity: 1 !important;
   }
   
   .bg-secondary {
     background-color: hsl(var(--secondary)) !important;
+    color: black !important;
     opacity: 1 !important;
   }
   
   .bg-destructive {
     background-color: hsl(var(--destructive)) !important;
+    color: white !important;
     opacity: 1 !important;
   }
   
   .bg-accent {
     background-color: hsl(var(--accent)) !important;
+    color: black !important;
     opacity: 1 !important;
+  }
+  
+  /* 强制所有文字为黑色（在白色背景上） */
+  body {
+    color: black !important;
+  }
+  
+  /* 确保所有文字元素可见 */
+  p, span, div, h1, h2, h3, h4, h5, h6, label {
+    color: black !important;
+  }
+  
+  /* 确保输入框文字可见 */
+  input, textarea, select {
+    color: black !important;
+    background-color: white !important;
+  }
+  
+  /* 表格文字可见性 */
+  table, td, th, tr {
+    color: black !important;
+  }
+  
+  /* 确保深色背景上的文字可见 */
+  .bg-slate-900 *, .bg-gray-900 *, .bg-black * {
+    color: white !important;
+  }
+  
+  /* 强制覆盖新拟态样式的文字颜色 */
+  .neu-text-primary {
+    color: #000000 !important;
+  }
+  
+  .neu-text-secondary {
+    color: #333333 !important;
+  }
+  
+  .neu-text-muted {
+    color: #666666 !important;
+  }
+  
+  .neu-text-accent {
+    color: #1d4ed8 !important;
+  }
+  
+  /* 确保所有新拟态组件的文字可见 */
+  .neu-container *, .neu-card *, .neu-button *, .neu-panel * {
+    color: #000000 !important;
+  }
+  
+  /* 特别针对价格设置页面的文字 */
+  [class*="neu-"] {
+    color: #000000 !important;
+  }
+  
+  /* 管理后台页面文字强制可见 */
+  .admin-layout *, .pricing-settings *, [data-testid] * {
+    color: #000000 !important;
+  }
+  
+  /* 针对Card组件的文字 */
+  [class*="Card"] *, [class*="card"] * {
+    color: #000000 !important;
+  }
+  
+  /* 终极文字可见性修复 - 覆盖一切可能的样式 */
+  * {
+    color: #000000 !important;
+  }
+  
+  /* 但是深色背景上的文字应该是白色 */
+  .bg-slate-900, .bg-slate-900 *, 
+  .bg-gray-900, .bg-gray-900 *, 
+  .bg-black, .bg-black *,
+  [style*="background: black"], [style*="background: black"] *,
+  [style*="background-color: black"], [style*="background-color: black"] * {
+    color: #ffffff !important;
+  }
+  
+  /* 按钮的文字颜色保持正确 */
+  .bg-primary, .bg-primary * {
+    color: #ffffff !important;
+  }
+  
+  .bg-destructive, .bg-destructive * {
+    color: #ffffff !important;
+  }
+  
+  .bg-secondary, .bg-secondary * {
+    color: #000000 !important;
+  }
+  
+  .bg-accent, .bg-accent * {
+    color: #000000 !important;
   }
 }
 

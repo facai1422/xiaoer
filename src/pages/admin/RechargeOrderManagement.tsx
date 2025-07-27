@@ -24,6 +24,7 @@ interface RechargeOrder {
   recharge_amount?: number;
   user_name?: string;
   name?: string;
+  order_type?: string;
   // 关联数据
   user_email?: string;
   user_username?: string;
@@ -65,14 +66,18 @@ const RechargeOrderManagement = () => {
 
       // 获取用户信息 - 从user_profiles和users表获取
       const userIds = [...new Set(ordersData?.map(order => order.user_id) || [])];
+      console.log('📧 需要获取用户信息的ID列表:', userIds);
       const userProfiles: Record<string, {email?: string, username?: string, phone?: string}> = {};
       
       if (userIds.length > 0) {
         // 首先从user_profiles表获取用户信息
+        console.log('📧 尝试从user_profiles获取用户信息...');
         const { data: profiles, error: profileError } = await supabase
           .from('user_profiles')
           .select('user_id, email, username, phone')
           .in('user_id', userIds);
+        
+        console.log('📊 user_profiles查询结果:', { profiles: profiles || [], profileError });
         
         if (!profileError && profiles) {
           profiles?.forEach((profile: any) => {
@@ -82,6 +87,7 @@ const RechargeOrderManagement = () => {
                 username: profile.username || undefined,
                 phone: profile.phone || undefined
               };
+              console.log(`✅ 用户 ${profile.user_id} 从user_profiles获取信息:`, userProfiles[profile.user_id]);
             }
           });
         }
@@ -89,11 +95,14 @@ const RechargeOrderManagement = () => {
         // 对于没有在user_profiles中找到的用户，从users表获取邮箱信息
         const missingUserIds = userIds.filter((id: string) => !userProfiles[id]);
         if (missingUserIds.length > 0) {
+          console.log('📧 尝试从users表获取缺失用户邮箱:', missingUserIds);
           const { data: authUsers, error: authError } = await supabase
             .from('users')
             .select('id, email')
             .in('id', missingUserIds);
             
+          console.log('📊 users表查询结果:', { users: authUsers || [], userError: authError });
+          
           if (!authError && authUsers) {
             authUsers.forEach((user: any) => {
               if (user?.id) {
@@ -102,12 +111,38 @@ const RechargeOrderManagement = () => {
                   username: '用户',
                   phone: undefined
                 };
+                console.log(`✅ 用户 ${user.id} 从users表获取邮箱: ${user.email}`);
               }
             });
           }
+          
+          // 如果还有用户找不到，尝试用user_profiles.id查询（可能user_id字段不匹配）
+          const stillMissingUserIds = userIds.filter((id: string) => !userProfiles[id]);
+          if (stillMissingUserIds.length > 0) {
+            console.log('📧 尝试按ID查询user_profiles (可能user_id字段不匹配):', stillMissingUserIds);
+            const { data: profilesById, error: profilesByIdError } = await supabase
+              .from('user_profiles')
+              .select('id, email, username, phone')
+              .in('id', stillMissingUserIds);
+              
+            console.log('📊 按ID查询user_profiles结果:', { profilesById: profilesById || [], profilesByIdError });
+            
+            if (!profilesByIdError && profilesById) {
+              profilesById.forEach((profile: any) => {
+                if (profile?.id) {
+                  userProfiles[profile.id as string] = {
+                    email: profile.email || undefined,
+                    username: profile.username || undefined,
+                    phone: profile.phone || undefined
+                  };
+                  console.log(`✅ 用户 ${profile.id} 按ID映射邮箱: ${profile.email}`);
+                }
+              });
+            }
+          }
         }
         
-        console.log('用户信息:', userProfiles);
+        console.log('📋 最终用户邮箱映射:', userProfiles);
       }
 
       // 组合数据
@@ -177,51 +212,73 @@ const RechargeOrderManagement = () => {
 
   const handleApproveOrder = async (orderId: string) => {
     try {
-      // 直接更新订单状态，数据库触发器会自动处理余额更新
-      const { error } = await supabase
-        .from('recharge_orders')
-        .update({
-          status: 'confirmed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', orderId);
+      console.log('🔄 开始确认订单，订单ID:', orderId);
+      
+      // 使用 RPC 函数绕过 RLS 权限限制
+      const { data, error } = await (supabase as any)
+        .rpc('admin_confirm_recharge_order', { order_id: orderId });
+
+      console.log('📊 订单确认RPC结果:', { data, error });
 
       if (error) {
-        console.error('审核订单失败:', error);
+        console.error('❌ 审核订单失败:', error);
         toast.error('审核订单失败: ' + error.message);
         return;
       }
 
+      const result = data as { success: boolean; message: string; order_id?: string; order_number?: string };
+      if (!result?.success) {
+        console.error('⚠️ 订单确认RPC返回失败:', result.message);
+        toast.error(result.message || '订单确认失败');
+        return;
+      }
+
+      console.log('✅ 订单确认成功，订单:', result.order_number);
       toast.success('订单已确认，用户余额已自动更新');
-      fetchOrders();
+      
+      // 刷新订单列表
+      console.log('🔄 开始刷新订单列表...');
+      await fetchOrders();
       setShowOrderDialog(false);
+      console.log('✅ 订单列表刷新完成');
     } catch (error) {
-      console.error('审核订单异常:', error);
+      console.error('❌ 审核订单异常:', error);
       toast.error('审核订单失败');
     }
   };
 
   const handleRejectOrder = async (orderId: string) => {
     try {
-      const { error } = await supabase
-        .from('recharge_orders')
-        .update({
-          status: 'cancelled',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', orderId);
+      console.log('🔄 开始拒绝订单，订单ID:', orderId);
+      
+      // 使用 RPC 函数绕过 RLS 权限限制
+      const { data, error } = await (supabase as any)
+        .rpc('admin_reject_recharge_order', { order_id: orderId });
+
+      console.log('📊 订单拒绝RPC结果:', { data, error });
 
       if (error) {
-        console.error('拒绝订单失败:', error);
-        toast.error('拒绝订单失败');
+        console.error('❌ 拒绝订单失败:', error);
+        toast.error('拒绝订单失败: ' + error.message);
         return;
       }
 
+      const result = data as { success: boolean; message: string; order_id?: string; order_number?: string };
+      if (!result?.success) {
+        console.error('⚠️ 订单拒绝RPC返回失败:', result.message);
+        toast.error(result.message || '订单拒绝失败');
+        return;
+      }
+
+      console.log('✅ 订单拒绝成功，订单:', result.order_number);
       toast.success('订单已拒绝');
-      fetchOrders();
+      
+      console.log('🔄 开始刷新订单列表...');
+      await fetchOrders();
       setShowOrderDialog(false);
+      console.log('✅ 订单列表刷新完成');
     } catch (error) {
-      console.error('拒绝订单异常:', error);
+      console.error('❌ 拒绝订单异常:', error);
       toast.error('拒绝订单失败');
     }
   };
@@ -430,6 +487,29 @@ const RechargeOrderManagement = () => {
                         <Eye className="w-4 h-4 mr-2" />
                         查看详情
                       </Button>
+                      
+                      {/* 主列表中的快捷操作按钮 */}
+                      {(order.status === 'pending' || order.status === 'proof_uploaded') && (
+                        <>
+                          <Button
+                            size="sm"
+                            className="bg-green-500 hover:bg-green-600 text-white"
+                            onClick={() => handleApproveOrder(order.id)}
+                          >
+                            <Check className="w-4 h-4 mr-2" />
+                            确认
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 border-red-300 hover:bg-red-50"
+                            onClick={() => handleRejectOrder(order.id)}
+                          >
+                            <X className="w-4 h-4 mr-2" />
+                            拒绝
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -671,7 +751,7 @@ const RechargeOrderManagement = () => {
                 )}
               </div>
 
-              {selectedOrder.status === 'proof_uploaded' && (
+              {(selectedOrder.status === 'pending' || selectedOrder.status === 'proof_uploaded') && (
                 <div className="flex gap-2 pt-4 border-t">
                   <Button
                     variant="outline"

@@ -122,52 +122,9 @@ export const createRechargeOrder = async (data: RechargeOrder) => {
         throw error;
       }
 
-      // 对于USDT充值，自动确认订单并更新余额
-      if (data.type === 'USDT充值' && order) {
-        try {
-          console.log('USDT充值订单，开始自动确认...');
-          
-          // 自动确认订单
-          const { error: updateOrderError } = await supabase
-            .from('recharge_orders')
-            .update({ 
-              status: 'completed',
-              approved_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', order.id);
-
-          if (updateOrderError) {
-            console.error('自动确认订单失败:', updateOrderError);
-          } else {
-            console.log('订单自动确认成功');
-            
-            // 确保用户在users表中存在（为了交易记录）
-            const { error: ensureUserError } = await supabase
-              .from('users')
-              .upsert({
-                id: userId,
-                username: user.email?.split('@')[0] || '用户',
-                email: user.email || '',
-                password_hash: 'dummy_hash',
-                invitation_code: 'DEFAULT',
-                referral_link: `https://example.com/ref/${userId.substring(0, 8)}`,
-                registered_at: new Date().toISOString(),
-                balance: 0
-              }, { onConflict: 'id' });
-
-            if (ensureUserError) {
-              console.log('确保用户存在时出错:', ensureUserError);
-            }
-
-            // 更新用户余额
-            await updateUserBalance(userId, actual_amount);
-          }
-        } catch (autoConfirmError) {
-          console.error('自动确认过程出错:', autoConfirmError);
-          // 不抛出错误，因为订单已经创建成功
-        }
-      }
+      // 🔒 安全修复：移除自动确认逻辑，所有充值订单都需要管理员审核
+      // 所有充值订单创建后都保持 'pending' 状态，等待管理员审核
+      console.log('✅ 充值订单创建成功，等待管理员审核确认:', order.order_number);
 
       toast.success("充值订单创建成功！");
       return order;

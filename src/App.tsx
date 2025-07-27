@@ -73,9 +73,8 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
-    // Check if user prefers dark mode
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    setIsDarkMode(prefersDark);
+    // 强制禁用暗色模式，确保管理后台文字可见
+    setIsDarkMode(false);
     
     // 初始化弹窗拖拽禁用功能
     const cleanup = initDialogDragDisable();

@@ -41,11 +41,11 @@
     inset 4px 4px 8px rgba(148, 163, 184, 0.3),
     inset -4px -4px 8px rgba(255, 255, 255, 0.8);
   
-  /* 文字颜色 - 高对比度 */
-  --neu-text-primary: #1a202c;
-  --neu-text-secondary: #2d3748;
-  --neu-text-muted: #4a5568;
-  --neu-text-accent: #2563eb;
+  /* 文字颜色 - 强制黑色确保可见 */
+  --neu-text-primary: #000000;
+  --neu-text-secondary: #000000;
+  --neu-text-muted: #333333;
+  --neu-text-accent: #1d4ed8;
   
   /* 动画时间 */
   --neu-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -404,35 +404,56 @@
 
 /* 移除暗色主题，确保界面始终明亮清晰 */
 body {
-  background: linear-gradient(145deg, #ffffff, #f8fafc);
-  color: var(--neu-text-primary);
+  background: linear-gradient(145deg, #ffffff, #f8fafc) !important;
+  color: #000000 !important;
 }
 
 /* 强制覆盖任何可能的暗色样式 */
 * {
-  color-scheme: light;
+  color-scheme: light !important;
+}
+
+/* 强制禁用任何dark类的影响 */
+.dark, .dark * {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* 强制管理后台页面使用明亮主题 */
+[class*="admin"] {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+[class*="admin"] * {
+  color: #000000 !important;
 }
 
 /* 确保所有文本都有足够的对比度 */
 h1, h2, h3, h4, h5, h6 {
-  color: var(--neu-text-primary);
+  color: #000000 !important;
   font-weight: 700;
 }
 
 p, span, div {
-  color: var(--neu-text-secondary);
+  color: #000000 !important;
 }
 
 /* 表格样式优化 */
 table {
-  color: var(--neu-text-primary);
+  color: #000000 !important;
 }
 
 th {
-  color: var(--neu-text-primary);
+  color: #000000 !important;
   font-weight: 700;
 }
 
 td {
-  color: var(--neu-text-secondary);
+  color: #000000 !important;
+}
+
+/* 强制所有文字为黑色 */
+* {
+  color: #000000 !important;
 } 
