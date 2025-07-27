@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { adminSupabase } from "@/utils/adminSupabase";
 
 // 订单类型定义
 interface OnlineOrder {
@@ -53,9 +54,7 @@ interface OnlineOrder {
   status: 'pending' | 'grabbed' | 'processing' | 'completed' | 'partially_completed' | 'timeout' | 'cancelled';
   created_at: string;
   updated_at: string;
-  processor?: string;
-  processor_id?: string;
-  grabbed_at?: string;
+
   completed_amount?: number;
   remaining_amount?: number;
   payment_proof?: string;
@@ -451,12 +450,14 @@ const OrderDetailModal = ({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-gray-600">处理人</label>
-                  <p className="font-medium text-gray-800">{order.processor || '未分配'}</p>
+                  <p className="font-medium text-gray-800">
+                    {order.status === 'grabbed' || order.status === 'processing' || order.status === 'completed' ? '管理员' : '未分配'}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-600">抢单时间</label>
+                  <label className="text-sm text-gray-600">更新时间</label>
                   <p className="font-medium text-gray-800">
-                    {order.grabbed_at ? new Date(order.grabbed_at).toLocaleString() : '未抢单'}
+                    {order.updated_at ? new Date(order.updated_at).toLocaleString() : '未知'}
                   </p>
                 </div>
                 {order.completed_amount !== undefined && (
@@ -595,17 +596,10 @@ const OnlineOrdersPage = () => {
     try {
       setIsLoading(true);
       
-      const adminSession = getAdminSession();
-      if (!adminSession) {
-        toast({
-          variant: "destructive",
-          title: "权限错误",
-          description: "请先登录管理员账户"
-        });
-        return;
-      }
+      console.log('🔄 管理后台 - 获取业务订单数据');
       
       // 从recharge_orders获取业务类型的订单（order_type = 'business'）
+      // 直接使用普通supabase客户端，与用户端保持一致
       const { data: businessOrders, error: businessError } = await supabase
         .from('recharge_orders')
         .select('*')
@@ -613,11 +607,33 @@ const OnlineOrdersPage = () => {
         .order('created_at', { ascending: false });
 
       if (businessError) {
-        console.error('获取业务订单失败:', businessError);
+        console.error('❌ 获取业务订单失败:', businessError);
         toast({
           variant: "destructive",
           title: "数据获取失败",
-          description: "获取业务订单数据时发生错误"
+          description: `获取业务订单数据时发生错误: ${businessError.message}`
+        });
+        setOrders([]);
+        setStats({ total: 0, pending: 0, grabbed: 0, processing: 0, completed: 0, timeout: 0 });
+        return;
+      }
+
+      console.log('✅ 获取到的业务订单数据:', businessOrders);
+      console.log('📊 业务订单数量:', businessOrders?.length || 0);
+      
+      // 打印每个订单的状态，便于调试
+      businessOrders?.forEach((order, index) => {
+        console.log(`订单${index + 1}: ${order.order_number} - 状态: ${order.status}`);
+      });
+
+      if (!businessOrders || businessOrders.length === 0) {
+        console.log('📝 未找到业务订单记录');
+        setOrders([]);
+        setStats({ total: 0, pending: 0, grabbed: 0, processing: 0, completed: 0, timeout: 0 });
+        toast({
+          title: "数据状态",
+          description: "暂无业务订单记录",
+          variant: "default"
         });
         return;
       }
@@ -626,33 +642,87 @@ const OnlineOrdersPage = () => {
       const userIds = [...new Set((businessOrders || []).map(order => order.user_id))];
       const userEmailMap: Record<string, string> = {};
       
+      console.log('🔍 需要获取用户信息的ID列表:', userIds);
+      
       if (userIds.length > 0) {
-        // 从user_profiles表获取用户信息
-        const { data: profiles } = await supabase
-          .from('user_profiles')
-          .select('user_id, email, username')
-          .in('user_id', userIds);
+        try {
+          // 方法1: 从user_profiles表获取用户邮箱
+          console.log('📧 尝试从user_profiles获取用户邮箱...');
+          const { data: profiles, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('user_id, email, username, phone')
+            .in('user_id', userIds);
           
-        if (profiles) {
-          profiles.forEach(profile => {
-            // 优先使用邮箱，然后用户名，最后是用户ID
-            userEmailMap[profile.user_id] = profile.email || profile.username || `用户${profile.user_id.slice(0, 8)}`;
-          });
-        }
-        
-        // 如果user_profiles表没有数据，从users表获取
-        const missingUserIds = userIds.filter(id => !userEmailMap[id]);
-        if (missingUserIds.length > 0) {
-          const { data: users } = await supabase
-            .from('users')
-            .select('id, email')
-            .in('id', missingUserIds);
-            
-          if (users) {
-            users.forEach(user => {
-              userEmailMap[user.id] = user.email || `用户${user.id.slice(0, 8)}`;
+          console.log('📊 user_profiles查询结果:', { profiles, profileError });
+          
+          if (!profileError && profiles) {
+            profiles.forEach((profile: any) => {
+              const email = profile.email || profile.username || `${profile.phone || ''}`.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2') || null;
+              if (email) {
+                userEmailMap[profile.user_id] = email;
+                console.log(`✅ 用户 ${profile.user_id} 映射邮箱: ${email}`);
+              }
             });
           }
+          
+          // 方法2: 对于仍然没有邮箱的用户，从auth.users表获取
+          const missingUsers = userIds.filter(id => !userEmailMap[id]);
+          if (missingUsers.length > 0) {
+            console.log('📧 尝试从users表获取缺失用户邮箱:', missingUsers);
+            const { data: users, error: userError } = await supabase
+              .from('users')
+              .select('id, email')  // 去掉不存在的phone字段
+              .in('id', missingUsers);
+            
+            console.log('📊 users表查询结果:', { users, userError });
+            
+            if (!userError && users) {
+              users.forEach((user: any) => {
+                const email = user.email || `用户${user.id.slice(0, 8)}`;
+                userEmailMap[user.id] = email;
+                console.log(`✅ 用户 ${user.id} 从users表映射: ${email}`);
+              });
+            }
+          }
+          
+          // 方法3: 检查是否user_profiles表中的记录使用了不同的关联方式
+          const stillMissingUsers = userIds.filter(id => !userEmailMap[id]);
+          if (stillMissingUsers.length > 0) {
+            console.log('📧 尝试按ID查询user_profiles (可能user_id字段不匹配):', stillMissingUsers);
+            const { data: profilesById, error: profilesByIdError } = await supabase
+              .from('user_profiles')
+              .select('id, user_id, email, username, phone')
+              .in('id', stillMissingUsers);  // 尝试按id字段查询
+            
+            console.log('📊 按ID查询user_profiles结果:', { profilesById, profilesByIdError });
+            
+            if (!profilesByIdError && profilesById) {
+              profilesById.forEach((profile: any) => {
+                const email = profile.email || profile.username || `${profile.phone || ''}`.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2') || null;
+                if (email) {
+                  userEmailMap[profile.id] = email;  // 使用profile.id作为key
+                  console.log(`✅ 用户 ${profile.id} 按ID映射邮箱: ${email}`);
+                }
+              });
+            }
+          }
+          
+          // 方法3: 最后的fallback
+          userIds.forEach(userId => {
+            if (!userEmailMap[userId]) {
+              userEmailMap[userId] = `用户${userId.slice(0, 8)}`;
+              console.log(`⚠️ 用户 ${userId} 使用默认显示名`);
+            }
+          });
+          
+          console.log('📋 最终用户邮箱映射:', userEmailMap);
+          
+        } catch (userError) {
+          console.error('❌ 获取用户信息时发生错误:', userError);
+          // 即使用户信息获取失败，我们也要显示订单
+          userIds.forEach(userId => {
+            userEmailMap[userId] = `用户${userId.slice(0, 8)}`;
+          });
         }
       }
 
@@ -679,6 +749,9 @@ const OnlineOrdersPage = () => {
           metadata = order.metadata as Record<string, string | number | boolean>;
         }
         
+        const mappedStatus = mapOrderStatus(order.status);
+        console.log(`🔄 映射订单状态: ${order.order_number} 原状态=${order.status} 映射后=${mappedStatus}`);
+        
         return {
           id: order.id,
           order_number: order.order_number,
@@ -686,7 +759,7 @@ const OnlineOrdersPage = () => {
           user_name: order.user_name || order.name || '未知',
           order_type: businessName,
           amount: order.amount,
-          status: mapOrderStatus(order.status),
+          status: mappedStatus,
           created_at: order.created_at || '',
           updated_at: order.updated_at || '',
           description: order.remark || order.name || `${businessName}订单`,
@@ -700,6 +773,7 @@ const OnlineOrdersPage = () => {
         };
       });
 
+      console.log('✅ 数据格式化完成，订单数量:', formattedOrders.length);
       setOrders(formattedOrders);
       
       // 计算统计数据
@@ -712,13 +786,26 @@ const OnlineOrdersPage = () => {
       
       setStats({ total, pending, grabbed, processing, completed, timeout });
       
+      console.log('📊 统计数据更新:', { total, pending, grabbed, processing, completed, timeout });
+      
+      if (total > 0) {
+        toast({
+          title: "数据加载成功",
+          description: `成功加载 ${total} 条业务订单记录`,
+          variant: "default"
+        });
+      }
+      
     } catch (error) {
-      console.error('获取订单数据异常:', error);
+      console.error('❌ 获取订单数据异常:', error);
+      const errorMessage = error instanceof Error ? error.message : '获取订单数据时发生异常';
       toast({
         variant: "destructive",
         title: "系统错误",
-        description: "获取订单数据时发生异常"
+        description: errorMessage
       });
+      setOrders([]);
+      setStats({ total: 0, pending: 0, grabbed: 0, processing: 0, completed: 0, timeout: 0 });
     } finally {
       setIsLoading(false);
     }
@@ -818,32 +905,70 @@ const OnlineOrdersPage = () => {
   // 抢单操作
   const handleGrabOrder = async (orderId: string) => {
     try {
-      const { error } = await supabase
+      console.log('🔄 开始抢单操作，订单ID:', orderId);
+      
+      // 首先检查订单是否存在
+      const { data: existingOrder, error: checkError } = await supabase
         .from('recharge_orders')
-        .update({
-          status: 'proof_uploaded',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', orderId);
-
-      if (error) {
-        console.error('抢单失败:', error);
+        .select('id, order_number, status')
+        .eq('id', orderId)
+        .single();
+      
+      if (checkError || !existingOrder) {
+        console.error('❌ 订单不存在或查询失败:', checkError);
         toast({
           variant: "destructive",
           title: "操作失败",
-          description: "抢单操作失败"
+          description: "订单不存在或无权访问"
+        });
+        return;
+      }
+      
+      console.log('📋 找到订单:', existingOrder);
+      
+      // 使用管理员函数执行抢单操作（绕过RLS策略）
+      console.log('🔄 调用管理员抢单函数...');
+      const { data, error } = await (supabase as any)
+        .rpc('admin_grab_order', { order_id: orderId });
+      
+      console.log('📊 管理员抢单函数结果:', { data, error });
+      
+      // 检查函数调用结果
+      if (error) {
+        console.error('❌ 管理员函数调用失败:', error);
+        toast({
+          variant: "destructive",
+          title: "操作失败",
+          description: `抢单操作失败: ${error.message}`
+        });
+        return;
+      }
+      
+      // 检查业务逻辑结果
+      const result = data as { success: boolean; message: string; order_id?: string; order_number?: string };
+      if (!result?.success) {
+        console.error('❌ 抢单业务逻辑失败:', result?.message);
+        toast({
+          variant: "destructive",
+          title: "抢单失败",
+          description: result?.message || "抢单操作失败"
         });
         return;
       }
 
+      console.log('✅ 抢单成功! 订单:', result.order_number);
+      console.log('📊 开始刷新订单列表...');
+      
       toast({
         title: "抢单成功",
-        description: "订单已成功抢取"
+        description: `订单 ${result.order_number} 已成功抢取，正在刷新数据...`
       });
       
-      fetchOrders();
+      // 立即刷新订单数据
+      await fetchOrders();
+      console.log('🔄 订单列表刷新完成');
     } catch (error) {
-      console.error('抢单异常:', error);
+      console.error('❌ 抢单异常:', error);
       toast({
         variant: "destructive",
         title: "系统错误",
@@ -854,32 +979,50 @@ const OnlineOrdersPage = () => {
 
   const handleCompleteOrder = async (orderId: string) => {
     try {
-      const { error } = await supabase
-        .from('recharge_orders')
-        .update({
-          status: 'confirmed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', orderId);
-
+      console.log('🔄 开始完成订单操作，订单ID:', orderId);
+      
+      // 使用管理员函数执行完成订单操作（绕过RLS策略）
+      console.log('🔄 调用管理员完成订单函数...');
+      const { data, error } = await (supabase as any)
+        .rpc('admin_complete_order', { order_id: orderId });
+      
+      console.log('📊 管理员完成订单函数结果:', { data, error });
+      
+      // 检查函数调用结果
       if (error) {
-        console.error('完成订单失败:', error);
+        console.error('❌ 管理员函数调用失败:', error);
         toast({
           variant: "destructive",
           title: "操作失败",
-          description: "完成订单操作失败"
+          description: `完成订单操作失败: ${error.message}`
+        });
+        return;
+      }
+      
+      // 检查业务逻辑结果
+      const result = data as { success: boolean; message: string; order_id?: string; order_number?: string };
+      if (!result?.success) {
+        console.error('❌ 完成订单业务逻辑失败:', result?.message);
+        toast({
+          variant: "destructive",
+          title: "完成订单失败",
+          description: result?.message || "完成订单操作失败"
         });
         return;
       }
 
+      console.log('✅ 完成订单成功! 订单:', result.order_number);
+
       toast({
         title: "订单完成",
-        description: "订单已标记为完成"
+        description: `订单 ${result.order_number} 已标记为完成`
       });
       
-      fetchOrders();
+      // 刷新订单列表
+      await fetchOrders();
+      console.log('🔄 订单列表刷新完成');
     } catch (error) {
-      console.error('完成订单异常:', error);
+      console.error('❌ 完成订单异常:', error);
       toast({
         variant: "destructive",
         title: "系统错误",
@@ -1187,13 +1330,11 @@ const OnlineOrdersPage = () => {
                       <TableCell className="py-4 px-6">
                         <div>
                           <div className="text-sm text-gray-800">
-                            {order.processor || '未分配'}
+                            {order.status === 'grabbed' || order.status === 'processing' || order.status === 'completed' ? '管理员' : '未分配'}
                           </div>
-                          {order.grabbed_at && (
-                            <div className="text-xs text-gray-500">
-                              {new Date(order.grabbed_at).toLocaleTimeString()}
-                            </div>
-                          )}
+                          <div className="text-xs text-gray-500">
+                            {order.updated_at ? new Date(order.updated_at).toLocaleTimeString() : '未知'}
+                          </div>
                         </div>
                       </TableCell>
 

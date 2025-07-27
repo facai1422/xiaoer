@@ -48,11 +48,11 @@ const RechargeOrderManagement = () => {
     try {
       setLoading(true);
 
-      // 获取钱包充值订单数据（只显示 order_type = 'wallet' 的订单）
+      // 获取所有充值订单数据（包括钱包充值和业务充值）
       const { data: ordersData, error } = await supabase
         .from('recharge_orders')
         .select('*')
-        .eq('order_type', 'wallet')  // 只显示钱包充值订单
+        .in('order_type', ['wallet', 'business'])  // 显示所有充值订单类型
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -63,25 +63,48 @@ const RechargeOrderManagement = () => {
 
       console.log('订单数据:', ordersData);
 
-      // 获取用户信息 - 只从user_profiles表获取
+      // 获取用户信息 - 从user_profiles和users表获取
       const userIds = [...new Set(ordersData?.map(order => order.user_id) || [])];
       const userProfiles: Record<string, {email?: string, username?: string, phone?: string}> = {};
       
       if (userIds.length > 0) {
-        // 只从user_profiles表获取用户信息
+        // 首先从user_profiles表获取用户信息
         const { data: profiles, error: profileError } = await supabase
           .from('user_profiles')
           .select('user_id, email, username, phone')
           .in('user_id', userIds);
         
         if (!profileError && profiles) {
-          profiles?.forEach(profile => {
-            userProfiles[profile.user_id] = {
-              email: profile.email || undefined,
-              username: profile.username || undefined,
-              phone: profile.phone || undefined
-            };
+          profiles?.forEach((profile: any) => {
+            if (profile?.user_id) {
+              userProfiles[profile.user_id as string] = {
+                email: profile.email || undefined,
+                username: profile.username || undefined,
+                phone: profile.phone || undefined
+              };
+            }
           });
+        }
+
+        // 对于没有在user_profiles中找到的用户，从users表获取邮箱信息
+        const missingUserIds = userIds.filter((id: string) => !userProfiles[id]);
+        if (missingUserIds.length > 0) {
+          const { data: authUsers, error: authError } = await supabase
+            .from('users')
+            .select('id, email')
+            .in('id', missingUserIds);
+            
+          if (!authError && authUsers) {
+            authUsers.forEach((user: any) => {
+              if (user?.id) {
+                userProfiles[user.id as string] = {
+                  email: user.email || undefined,
+                  username: '用户',
+                  phone: undefined
+                };
+              }
+            });
+          }
         }
         
         console.log('用户信息:', userProfiles);
@@ -91,27 +114,45 @@ const RechargeOrderManagement = () => {
       const enrichedOrders = ordersData?.map(order => {
         const userProfile = userProfiles[order.user_id] || {};
         
-        // 根据payment_method和其他字段推断订单类型
+        // 根据order_type、name、payment_method等推断订单类型
         let orderTypeDisplay = '普通充值';
-        if (order.phone_number) {
-          orderTypeDisplay = '话费充值';
-        } else if (order.payment_method) {
-          const paymentMethodToProduct: Record<string, string> = {
-            'TRC20': 'USDT充值',
-            'USDT': 'USDT充值',
-            'mobile': '话费充值',
-            'electricity': '电费充值',
-            'credit_card': '信用卡代还',
-            'huabei': '花呗代还',
-            'gas': '燃气缴费',
-            'water': '水费缴费',
-            'douyin': '抖币充值',
-            'kuaishou': '快币充值',
-            'netease': '网易游戏',
-            'oil_card': '石化加油卡',
-            'fangxin': '放心借',
-          };
-          orderTypeDisplay = paymentMethodToProduct[order.payment_method] || order.payment_method;
+        
+        if (order.order_type === 'business') {
+          // 业务充值订单：优先使用name字段，然后是payment_method
+          if (order.name) {
+            orderTypeDisplay = order.name;
+          } else if (order.payment_method) {
+            const businessMethodToProduct: Record<string, string> = {
+              '话费充值': '话费充值',
+              '信用卡还款': '信用卡代还',
+              '花呗还款': '花呗代还',
+              '抖币充值': '抖币充值',
+              '快币充值': '快币充值',
+              '网易游戏': '网易游戏',
+              '石化加油卡': '石化加油卡',
+              '燃气缴费': '燃气缴费',
+              '放心借': '放心借',
+              '电费充值': '电费充值',
+            };
+            orderTypeDisplay = businessMethodToProduct[order.payment_method] || order.payment_method;
+          } else {
+            orderTypeDisplay = '业务充值';
+          }
+        } else if (order.order_type === 'wallet') {
+          // 钱包充值订单
+          if (order.phone_number) {
+            orderTypeDisplay = '话费充值';
+          } else if (order.payment_method) {
+            const walletMethodToProduct: Record<string, string> = {
+              'TRC20': 'USDT充值',
+              'USDT': 'USDT充值',
+              'mobile': '话费充值',
+              'electricity': '电费充值',
+            };
+            orderTypeDisplay = walletMethodToProduct[order.payment_method] || order.payment_method;
+          } else {
+            orderTypeDisplay = '钱包充值';
+          }
         }
         
         return {

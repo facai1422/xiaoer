@@ -20,17 +20,17 @@
     --card: 0 0% 100%;
     --card-foreground: 222.2 47.4% 11.2%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 9% 46%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 9% 46%;
 
-    --destructive: 0 100% 50%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
     --ring: 215 20.2% 65.1%;
 
@@ -56,11 +56,11 @@
     --card: 224 71% 4%;
     --card-foreground: 213 31% 91%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 1.2%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 224 71% 4%;
 
-    --secondary: 222.2 47.4% 11.2%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 223 47% 11%;
+    --secondary-foreground: 213 31% 91%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
@@ -78,6 +78,32 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* 确保按钮有正确的不透明度和背景 */
+  button {
+    opacity: 1 !important;
+  }
+  
+  /* 修复所有按钮变体的背景显示问题 */
+  .bg-primary {
+    background-color: hsl(var(--primary)) !important;
+    opacity: 1 !important;
+  }
+  
+  .bg-secondary {
+    background-color: hsl(var(--secondary)) !important;
+    opacity: 1 !important;
+  }
+  
+  .bg-destructive {
+    background-color: hsl(var(--destructive)) !important;
+    opacity: 1 !important;
+  }
+  
+  .bg-accent {
+    background-color: hsl(var(--accent)) !important;
+    opacity: 1 !important;
   }
 }
 

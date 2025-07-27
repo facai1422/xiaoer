@@ -136,23 +136,37 @@ export const RegisterForm = ({ onSuccess, defaultInviteCode }: RegisterFormProps
       
       console.log('用户档案创建成功:', profileData);
 
-      // 更新推荐人的推荐数量
+      // 更新推荐人的推荐数量和代理状态
       const { data: currentReferrer, error: getReferrerError } = await supabase
         .from('user_profiles')
-        .select('referral_count')
+        .select('referral_count, is_agent')
         .eq('id', referrer.id)
         .single();
 
       if (!getReferrerError && currentReferrer) {
+        const newReferralCount = (currentReferrer.referral_count || 0) + 1;
+        
+        // 自动代理晋升逻辑：首次成功邀请用户注册即成为代理
+        const shouldPromoteToAgent = !currentReferrer.is_agent && newReferralCount >= 1;
+        
+        const updateData: any = { 
+          referral_count: newReferralCount
+        };
+        
+        if (shouldPromoteToAgent) {
+          updateData.is_agent = true;
+          console.log(`🎉 用户 ${referrer.username} 成功邀请第${newReferralCount}个用户，自动晋升为代理！`);
+        }
+
         const { error: updateError } = await supabase
           .from('user_profiles')
-          .update({ 
-            referral_count: (currentReferrer.referral_count || 0) + 1
-          })
+          .update(updateData)
           .eq('id', referrer.id);
 
         if (updateError) {
-          console.error('更新推荐人数量错误:', updateError);
+          console.error('更新推荐人信息错误:', updateError);
+        } else if (shouldPromoteToAgent) {
+          console.log('✅ 代理晋升成功');
         }
       }
 

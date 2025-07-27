@@ -135,11 +135,11 @@ export const AgentsPage = () => {
         return;
       }
       
-      // 查询代理用户
+      // 查询代理用户（使用is_agent字段）
       const { data: agentsData, error: agentsError } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('role', 'agent')
+        .eq('is_agent', true)
         .order('created_at', { ascending: false });
 
       if (agentsError) {

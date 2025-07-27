@@ -36,38 +36,61 @@ export default function RechargePage() {
   const fetchRechargeOrders = async () => {
     try {
       setLoading(true);
-      // 只获取钱包充值订单（order_type = 'wallet'）
-      const { data: ordersData, error } = await adminSupabase
-        .from('recharge_orders')
-        .select('*')
-        .eq('order_type', 'wallet')  // 只显示钱包充值订单
-        .order('created_at', { ascending: false });
+              // 获取所有充值订单（包括钱包充值和业务充值）
+        const { data: ordersData, error } = await adminSupabase
+          .from('recharge_orders')
+          .select('*')
+          .in('order_type', ['wallet', 'business'])  // 显示钱包充值和业务充值订单
+          .order('created_at', { ascending: false });
 
       if (error) {
         throw error;
       }
 
-      console.log('财务管理 - 钱包充值订单:', ordersData?.length || 0, '个');
+              console.log('财务管理 - 充值订单:', ordersData?.length || 0, '个');
 
-      // 获取用户信息 - 从user_profiles表获取
+      // 获取用户信息 - 修复关联查询
       const userIds = [...new Set(ordersData?.map(order => order.user_id) || [])];
       const userProfiles: Record<string, {email?: string, username?: string, phone?: string}> = {};
       
       if (userIds.length > 0) {
-        // 从user_profiles表获取用户信息
+        // 从user_profiles表获取用户信息（recharge_orders.user_id = auth.users.id = user_profiles.user_id）
         const { data: profiles, error: profileError } = await adminSupabase
           .from('user_profiles')
           .select('user_id, email, username, phone')
           .in('user_id', userIds);
         
         if (!profileError && profiles) {
-          profiles?.forEach(profile => {
-            userProfiles[profile.user_id] = {
-              email: profile.email || undefined,
-              username: profile.username || undefined,
-              phone: profile.phone || undefined
-            };
+          profiles?.forEach((profile: any) => {
+            if (profile?.user_id) {
+              userProfiles[profile.user_id as string] = {
+                email: profile.email || undefined,
+                username: profile.username || undefined,
+                phone: profile.phone || undefined
+              };
+            }
           });
+        }
+
+        // 如果有用户信息缺失，尝试从users表获取邮箱信息
+        const missingUserIds = userIds.filter(id => !userProfiles[id]);
+        if (missingUserIds.length > 0) {
+          const { data: authUsers, error: authError } = await adminSupabase
+            .from('users')
+            .select('id, email')
+            .in('id', missingUserIds);
+            
+          if (!authError && authUsers) {
+            authUsers.forEach((user: any) => {
+              if (user?.id) {
+                userProfiles[user.id as string] = {
+                  email: user.email || undefined,
+                  username: undefined,
+                  phone: undefined
+                };
+              }
+            });
+          }
         }
         
         console.log('用户信息:', userProfiles);
