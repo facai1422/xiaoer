@@ -65,6 +65,13 @@ import DirectTest from "./pages/DirectTest";
 import NoLoadingTest from "./pages/NoLoadingTest";
 import RechargeOrderDetail from "./pages/RechargeOrderDetail";
 import RechargeOrders from "./pages/RechargeOrders";
+
+// 新增的金融业务页面
+import DiDiFinance from "./pages/DiDiFinance";
+import DuXiaoManRepay from "./pages/DuXiaoManRepay";
+import FenQiLe from "./pages/FenQiLe";
+import AnYiHua from "./pages/AnYiHua";
+
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { PopupAnnouncement } from "@/components/home/PopupAnnouncement";
 
@@ -184,6 +191,12 @@ function App() {
           
           {/* Electric Recharge Route */}
           <Route path="/electric-recharge" element={<ElectricRecharge />} />
+          
+          {/* 新增的金融业务路由 */}
+          <Route path="/didi-finance" element={<DiDiFinance />} />
+          <Route path="/duxiaoman-repay" element={<DuXiaoManRepay />} />
+          <Route path="/fenqile" element={<FenQiLe />} />
+          <Route path="/anyihua" element={<AnYiHua />} />
           
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />

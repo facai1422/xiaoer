@@ -289,8 +289,115 @@ const Dashboard = () => {
         sort_order: 8,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
+      },
+      {
+        id: '13',
+        name: '京东E卡',
+        slug: 'jd-ecard',
+        category: '购物卡',
+        description: '9.5折购买',
+        logo_url: '/lovable-uploads/IMG_2912.PNG',
+        logo_type: 'static' as const,
+        base_rate: 0.95,
+        discount_rate: 0,
+        status: 'active' as const,
+        is_featured: true,
+        min_amount: 100,
+        max_amount: 10000,
+        quick_amounts: [500, 1000, 2000, 5000],
+        form_config: [],
+        workflow_config: [],
+        sort_order: 13,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      // 新增的金融业务服务
+      {
+        id: '14',
+        name: '滴滴金融',
+        slug: 'didi-finance',
+        category: '金融代还',
+        description: '网贷代还服务',
+        logo_url: null,
+        logo_type: 'static' as const,
+        base_rate: 1.0,
+        discount_rate: 0,
+        status: 'active' as const,
+        is_featured: true,
+        min_amount: 5000,
+        max_amount: 50000,
+        quick_amounts: [5000, 10000, 20000, 30000, 50000],
+        form_config: [],
+        workflow_config: [],
+        sort_order: 14,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '15',
+        name: '度小满代还',
+        slug: 'duxiaoman-repay',
+        category: '金融代还',
+        description: '专业代还服务',
+        logo_url: null,
+        logo_type: 'static' as const,
+        base_rate: 1.0,
+        discount_rate: 0,
+        status: 'active' as const,
+        is_featured: true,
+        min_amount: 5000,
+        max_amount: 50000,
+        quick_amounts: [5000, 10000, 20000, 30000, 50000],
+        form_config: [],
+        workflow_config: [],
+        sort_order: 15,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '16',
+        name: '分期乐',
+        slug: 'fenqile',
+        category: '金融代还',
+        description: '支持分期乐、好分期',
+        logo_url: null,
+        logo_type: 'static' as const,
+        base_rate: 1.0,
+        discount_rate: 0,
+        status: 'active' as const,
+        is_featured: true,
+        min_amount: 5000,
+        max_amount: 50000,
+        quick_amounts: [5000, 10000, 20000, 30000, 50000],
+        form_config: [],
+        workflow_config: [],
+        sort_order: 16,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '17',
+        name: '安逸花',
+        slug: 'anyihua',
+        category: '金融代还',
+        description: '安全快捷代还',
+        logo_url: null,
+        logo_type: 'static' as const,
+        base_rate: 1.0,
+        discount_rate: 0,
+        status: 'active' as const,
+        is_featured: true,
+        min_amount: 5000,
+        max_amount: 50000,
+        quick_amounts: [5000, 10000, 20000, 30000, 50000],
+        form_config: [],
+        workflow_config: [],
+        sort_order: 17,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
+    
     setProducts(defaultProducts);
   };
 
@@ -338,7 +445,11 @@ const Dashboard = () => {
       '燃气': '/lovable-uploads/IMG_2918.PNG',
       '石油': '/lovable-uploads/IMG_2905.PNG',
       '石化': '/lovable-uploads/IMG_2903.PNG',
-      '京东': '/lovable-uploads/IMG_2912.PNG'
+      '京东': '/lovable-uploads/IMG_2912.PNG',
+      '滴滴': '/lovable-uploads/IMG_2916.PNG',
+      '度小满': '/lovable-uploads/IMG_2916.PNG',
+      '分期乐': '/lovable-uploads/IMG_2916.PNG',
+      '安逸花': '/lovable-uploads/IMG_2916.PNG'
     };
 
     // 根据产品名称匹配图标
@@ -434,6 +545,12 @@ const Dashboard = () => {
         'jd-card': '/jd-ecard',
         'jingdong-ecard': '/jd-ecard',
         
+        // 新增的金融业务路由
+        'didi-finance': '/didi-finance',
+        'duxiaoman-repay': '/duxiaoman-repay',
+        'fenqile': '/fenqile',
+        'anyihua': '/anyihua',
+        
         // 其他可能的slug
         'game-recharge': '/netease-game',
         'utility-payment': '/gas-fee'
@@ -466,6 +583,14 @@ const Dashboard = () => {
           finalRoute = '/mobile-recharge';
         } else if (product.name.includes('电费')) {
           finalRoute = '/electric-recharge';
+        } else if (product.name.includes('滴滴')) {
+          finalRoute = '/didi-finance';
+        } else if (product.name.includes('度小满')) {
+          finalRoute = '/duxiaoman-repay';
+        } else if (product.name.includes('分期乐')) {
+          finalRoute = '/fenqile';
+        } else if (product.name.includes('安逸花')) {
+          finalRoute = '/anyihua';
         }
       }
       
