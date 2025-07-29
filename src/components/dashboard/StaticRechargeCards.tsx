@@ -44,19 +44,46 @@ const StaticRechargeCards: React.FC<StaticRechargeCardsProps> = ({ cards }) => {
 
   return (
     <div className="px-4 pt-6 pb-6">
-      <h2 className="text-lg font-medium mb-4 text-gray-800">快速充值</h2>
+      <h2 
+        className="text-lg font-medium mb-4" 
+        style={{ color: '#1f2937 !important' }}
+      >
+        快速充值
+      </h2>
       <div className="grid grid-cols-2 gap-3">
         {cardData.map((card, index) => (
           <div 
             key={index} 
             className="card-container cursor-pointer hover:scale-105 transition-transform duration-300"
             onClick={() => navigate(card.route)}
+            style={{ 
+              // 使用CSS变量覆盖可能的全局样式
+              '--text-color': '#ffffff',
+              '--text-dark': '#838383',
+              '--text-light': '#bab9b9'
+            } as React.CSSProperties}
           >
             {/* 渐变边框容器 */}
-            <div className="w-full bg-gradient-to-tr from-[#975af4] via-[#2f7cf8] via-[#78aafa] to-[#934cff] p-1 rounded-[32px] flex flex-col">
+            <div 
+              className="w-full p-1 rounded-[32px] flex flex-col"
+              style={{
+                background: 'linear-gradient(135deg, #975af4, #2f7cf8, #78aafa, #934cff)',
+                color: '#ffffff'
+              }}
+            >
               {/* 顶部标题卡片 */}
-              <div className="flex items-center justify-between px-[18px] py-4 text-white">
-                <p className="text-sm font-semibold italic text-white" style={{ textShadow: '2px 2px 6px #2975ee' }}>
+              <div 
+                className="flex items-center justify-between px-[18px] py-4" 
+                style={{ color: '#ffffff' }}
+              >
+                <p 
+                  className="text-sm font-semibold italic recharge-card-title" 
+                  style={{ 
+                    color: '#ffffff !important',
+                    textShadow: '2px 2px 6px #2975ee',
+                    fontWeight: '600'
+                  }}
+                >
                   {card.title}
                 </p>
                 <svg
@@ -64,7 +91,7 @@ const StaticRechargeCards: React.FC<StaticRechargeCardsProps> = ({ cards }) => {
                   width="20"
                   height="20"
                   viewBox="0 0 24 24"
-                  className="text-white"
+                  style={{ color: '#ffffff', fill: '#ffffff' }}
                 >
                   <path
                     fill="currentColor"
@@ -74,23 +101,72 @@ const StaticRechargeCards: React.FC<StaticRechargeCardsProps> = ({ cards }) => {
               </div>
 
               {/* 主要内容区域 */}
-              <div className="w-full h-full bg-[#161a20] rounded-[30px] text-[#838383] text-xs p-[18px] flex flex-col gap-[14px]">
+              <div 
+                className="w-full h-full rounded-[30px] text-xs p-[18px] flex flex-col gap-[14px] recharge-card-content"
+                style={{ 
+                  backgroundColor: '#161a20 !important',
+                  color: '#838383 !important'
+                }}
+              >
                 {/* 副标题 */}
-                <p className="font-semibold text-[#bab9b9]">{card.subtitle}</p>
+                <p 
+                  className="font-semibold recharge-card-subtitle" 
+                  style={{ 
+                    color: '#bab9b9 !important',
+                    fontWeight: '600'
+                  }}
+                >
+                  {card.subtitle}
+                </p>
                 
                 {/* 主要文字和折扣 */}
                 <div className="flex items-baseline justify-between">
-                  <span className="text-3xl text-white font-normal">{card.mainText}</span>
-                  <span className="text-sm text-[#838383]">{card.discount}</span>
+                  <span 
+                    className="text-3xl font-normal recharge-card-main" 
+                    style={{ 
+                      color: '#ffffff !important',
+                      fontSize: '1.875rem',
+                      fontWeight: '400'
+                    }}
+                  >
+                    {card.mainText}
+                  </span>
+                  <span 
+                    className="text-sm recharge-card-discount" 
+                    style={{ 
+                      color: '#838383 !important',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    {card.discount}
+                  </span>
                 </div>
                 
                 {/* 描述文字 */}
-                <p className="text-[#838383] text-xs leading-relaxed">{card.description}</p>
+                <p 
+                  className="text-xs leading-relaxed recharge-card-desc" 
+                  style={{ 
+                    color: '#838383 !important',
+                    fontSize: '0.75rem',
+                    lineHeight: '1.625'
+                  }}
+                >
+                  {card.description}
+                </p>
                 
                 {/* 按钮 */}
                 <button 
-                  className="bg-gradient-to-r from-[#975af4] via-[#2f7cf8] via-[#78aafa] to-[#934cff] p-2 border-none w-full rounded-lg text-white text-xs transition-all duration-300 ease-in-out cursor-pointer shadow-inner hover:scale-105 hover:text-white hover:shadow-[0_0_8px_#fff] active:scale-100"
-                  style={{ boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.6)' }}
+                  className="p-2 border-none w-full rounded-lg text-xs transition-all duration-300 ease-in-out cursor-pointer shadow-inner hover:scale-105 hover:shadow-[0_0_8px_#fff] active:scale-100 recharge-card-button"
+                  style={{ 
+                    background: 'linear-gradient(to right, #975af4, #2f7cf8, #78aafa, #934cff) !important',
+                    color: '#ffffff !important',
+                    boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.6)',
+                    fontSize: '0.75rem',
+                    padding: '0.5rem',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    fontWeight: '500'
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(card.route);

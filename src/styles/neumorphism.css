@@ -405,7 +405,6 @@
 /* 移除暗色主题，确保界面始终明亮清晰 */
 body {
   background: linear-gradient(145deg, #ffffff, #f8fafc) !important;
-  color: #000000 !important;
 }
 
 /* 强制覆盖任何可能的暗色样式 */
@@ -416,7 +415,6 @@ body {
 /* 强制禁用任何dark类的影响 */
 .dark, .dark * {
   background: #ffffff !important;
-  color: #000000 !important;
 }
 
 /* 强制管理后台页面使用明亮主题 */
@@ -429,31 +427,43 @@ body {
   color: #000000 !important;
 }
 
-/* 确保所有文本都有足够的对比度 */
-h1, h2, h3, h4, h5, h6 {
+/* 确保管理后台文本都有足够的对比度 */
+[class*="admin"] h1, 
+[class*="admin"] h2, 
+[class*="admin"] h3, 
+[class*="admin"] h4, 
+[class*="admin"] h5, 
+[class*="admin"] h6 {
   color: #000000 !important;
   font-weight: 700;
 }
 
-p, span, div {
+[class*="admin"] p, 
+[class*="admin"] span, 
+[class*="admin"] div {
   color: #000000 !important;
 }
 
-/* 表格样式优化 */
-table {
+/* 管理后台表格样式优化 */
+[class*="admin"] table {
   color: #000000 !important;
 }
 
-th {
+[class*="admin"] th {
   color: #000000 !important;
   font-weight: 700;
 }
 
-td {
+[class*="admin"] td {
   color: #000000 !important;
 }
 
-/* 强制所有文字为黑色 */
-* {
-  color: #000000 !important;
+/* 特殊处理：深色背景上的文字应该是白色 */
+[style*="background-color: #161a20"] *,
+[style*="backgroundColor: #161a20"] *,
+.bg-dark *,
+.bg-slate-900 *,
+.bg-gray-900 *,
+.bg-black * {
+  color: #ffffff !important;
 } 

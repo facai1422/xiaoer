@@ -177,18 +177,56 @@
     color: #000000 !important;
   }
   
-  /* 终极文字可见性修复 - 覆盖一切可能的样式 */
-  * {
+  /* 管理后台文字可见性修复 - 只针对管理后台路径 */
+  [data-admin-page] *, 
+  .admin-page *,
+  [href*="/admin"] *,
+  [class*="admin"] * {
     color: #000000 !important;
   }
+  
+  /* 移除过于激进的全局样式规则，改为针对性修复 */
   
   /* 但是深色背景上的文字应该是白色 */
   .bg-slate-900, .bg-slate-900 *, 
   .bg-gray-900, .bg-gray-900 *, 
   .bg-black, .bg-black *,
   [style*="background: black"], [style*="background: black"] *,
-  [style*="background-color: black"], [style*="background-color: black"] * {
+  [style*="background-color: black"], [style*="background-color: black"] *,
+  [style*="background-color: #161a20"], [style*="background-color: #161a20"] *,
+  [style*="backgroundColor: #161a20"], [style*="backgroundColor: #161a20"] * {
     color: #ffffff !important;
+  }
+  
+  /* 充值卡片组件专用样式 - 最高优先级 */
+  .recharge-card-title {
+    color: #ffffff !important;
+    text-shadow: 2px 2px 6px #2975ee !important;
+  }
+  
+  .recharge-card-content {
+    background-color: #161a20 !important;
+  }
+  
+  .recharge-card-subtitle {
+    color: #bab9b9 !important;
+  }
+  
+  .recharge-card-main {
+    color: #ffffff !important;
+  }
+  
+  .recharge-card-discount {
+    color: #838383 !important;
+  }
+  
+  .recharge-card-desc {
+    color: #838383 !important;
+  }
+  
+  .recharge-card-button {
+    color: #ffffff !important;
+    background: linear-gradient(to right, #975af4, #2f7cf8, #78aafa, #934cff) !important;
   }
   
   /* 按钮的文字颜色保持正确 */
