@@ -58,11 +58,12 @@ export const TransactionList = () => {
 
       console.log('✅ 找到用户档案ID:', userProfile.id);
 
-      // 使用正确的user_id查询充值订单
+      // 使用正确的user_id查询充值订单 - 只查询钱包充值订单
       const { data: ordersData, error: ordersError } = await supabase
         .from('recharge_orders')
-        .select('id, order_number, amount, status, created_at, payment_method')
+        .select('id, order_number, amount, status, created_at, payment_method, order_type')
         .eq('user_id', userProfile.id) // 使用user_profiles.id
+        .eq('order_type', 'wallet') // 只查询钱包充值订单，排除业务充值订单
         .order('created_at', { ascending: false })
         .limit(10);
 

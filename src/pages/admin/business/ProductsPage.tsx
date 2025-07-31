@@ -122,6 +122,22 @@ const ProductsPage = () => {
     template_id: '',
     tutorialText: '查看使用教程 →',
     showTutorial: true,
+    form_config: [] as Array<{
+      id: string;
+      name: string;
+      label: string;
+      type: 'text' | 'email' | 'phone' | 'password' | 'url' | 'textarea' | 'number' | 'select' | 'file';
+      placeholder?: string;
+      required: boolean;
+      options?: Array<{ value: string; label: string }>;
+      validation?: {
+        pattern?: string;
+        minLength?: number;
+        maxLength?: number;
+        min?: number;
+        max?: number;
+      };
+    }>,
   });
 
   // 快捷金额编辑状态
@@ -230,6 +246,35 @@ const ProductsPage = () => {
       template_id: '',
       tutorialText: '查看使用教程 →',
       showTutorial: true,
+      form_config: [
+        {
+          id: 'account',
+          name: 'account',
+          label: '账号',
+          type: 'text' as const,
+          placeholder: '请输入账号',
+          required: true,
+          validation: { minLength: 1, maxLength: 50 }
+        },
+        {
+          id: 'name',
+          name: 'name', 
+          label: '姓名',
+          type: 'text' as const,
+          placeholder: '请输入姓名',
+          required: false,
+          validation: { minLength: 2, maxLength: 20 }
+        },
+        {
+          id: 'amount',
+          name: 'amount',
+          label: '金额',
+          type: 'number' as const,
+          placeholder: '请输入金额',
+          required: true,
+          validation: { min: 100, max: 50000 }
+        }
+      ],
     });
     setQuickAmountInput('500,1000,2000,5000');
     setTutorialContent({
@@ -260,6 +305,35 @@ const ProductsPage = () => {
       template_id: product.template_id || '',
       tutorialText: product.custom_config?.tutorialText || '查看使用教程 →',
       showTutorial: product.custom_config?.showTutorial !== false,
+      form_config: (product as any).form_config || [
+        {
+          id: 'account',
+          name: 'account',
+          label: '账号',
+          type: 'text' as const,
+          placeholder: '请输入账号',
+          required: true,
+          validation: { minLength: 1, maxLength: 50 }
+        },
+        {
+          id: 'name',
+          name: 'name', 
+          label: '姓名',
+          type: 'text' as const,
+          placeholder: '请输入姓名',
+          required: false,
+          validation: { minLength: 2, maxLength: 20 }
+        },
+        {
+          id: 'amount',
+          name: 'amount',
+          label: '金额',
+          type: 'number' as const,
+          placeholder: '请输入金额',
+          required: true,
+          validation: { min: product.min_amount || 100, max: product.max_amount || 50000 }
+        }
+      ],
     });
     setQuickAmountInput((product.quick_amounts || []).join(','));
     
@@ -316,6 +390,7 @@ const ProductsPage = () => {
         sort_order: productForm.sort_order,
         template_id: productForm.template_id,
         custom_config: customConfig,
+        form_config: productForm.form_config,
         updated_at: new Date().toISOString()
       };
 
@@ -917,6 +992,140 @@ const ProductsPage = () => {
                     />
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* 表单字段配置 */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-gray-900 flex items-center">
+                <Tag className="h-4 w-4 mr-2" />
+                表单字段配置
+              </h4>
+              
+              <div className="space-y-3">
+                {productForm.form_config.map((field, index) => (
+                  <div key={field.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="grid grid-cols-3 gap-4 mb-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">字段名称</label>
+                        <Input
+                          value={field.name}
+                          onChange={(e) => {
+                            const newFields = [...productForm.form_config];
+                            newFields[index] = { ...field, name: e.target.value };
+                            setProductForm(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                          placeholder="字段名称"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">显示标签</label>
+                        <Input
+                          value={field.label}
+                          onChange={(e) => {
+                            const newFields = [...productForm.form_config];
+                            newFields[index] = { ...field, label: e.target.value };
+                            setProductForm(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                          placeholder="显示标签"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">字段类型</label>
+                        <Select
+                          value={field.type}
+                          onValueChange={(value: any) => {
+                            const newFields = [...productForm.form_config];
+                            newFields[index] = { ...field, type: value };
+                            setProductForm(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="text">文本</SelectItem>
+                            <SelectItem value="email">邮箱</SelectItem>
+                            <SelectItem value="phone">手机号</SelectItem>
+                            <SelectItem value="password">密码</SelectItem>
+                            <SelectItem value="url">链接</SelectItem>
+                            <SelectItem value="textarea">多行文本</SelectItem>
+                            <SelectItem value="number">数字</SelectItem>
+                            <SelectItem value="select">下拉选择</SelectItem>
+                            <SelectItem value="file">文件上传</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">占位符</label>
+                        <Input
+                          value={field.placeholder || ''}
+                          onChange={(e) => {
+                            const newFields = [...productForm.form_config];
+                            newFields[index] = { ...field, placeholder: e.target.value };
+                            setProductForm(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                          placeholder="输入占位符文本"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-4 pt-6">
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={field.required}
+                            onChange={(e) => {
+                              const newFields = [...productForm.form_config];
+                              newFields[index] = { ...field, required: e.target.checked };
+                              setProductForm(prev => ({ ...prev, form_config: newFields }));
+                            }}
+                            className="rounded"
+                          />
+                          <span className="text-xs">必填</span>
+                        </label>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            const newFields = productForm.form_config.filter((_, i) => i !== index);
+                            setProductForm(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                          className="h-6 px-2 text-xs"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const newField = {
+                      id: `field_${Date.now()}`,
+                      name: `field_${productForm.form_config.length + 1}`,
+                      label: '新字段',
+                      type: 'text' as const,
+                      placeholder: '请输入内容',
+                      required: false
+                    };
+                    setProductForm(prev => ({
+                      ...prev,
+                      form_config: [...prev.form_config, newField]
+                    }));
+                  }}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  添加字段
+                </Button>
               </div>
             </div>
 

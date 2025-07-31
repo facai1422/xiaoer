@@ -122,6 +122,7 @@ const AllOrders = () => {
       'processing': { text: '处理中', className: 'bg-blue-100 text-blue-600' },
       'completed': { text: '充值成功', className: 'bg-green-100 text-green-600' },
       'confirmed': { text: '充值成功', className: 'bg-green-100 text-green-600' },
+      'grabbed': { text: '已抢单', className: 'bg-orange-100 text-orange-600' },
       'failed': { text: '失败', className: 'bg-red-100 text-red-600' },
       'cancelled': { text: '已取消', className: 'bg-gray-100 text-gray-600' },
       'proof_uploaded': { text: '处理中', className: 'bg-blue-100 text-blue-600' },

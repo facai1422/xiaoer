@@ -47,11 +47,11 @@ export const createBusinessOrder = async (orderData: BusinessOrderData) => {
     // 3. 生成订单号
     const orderNumber = `BO${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
-    // 4. 创建订单（使用auth.users.id作为user_id，确保RLS策略正常工作）
+    // 4. 创建订单（使用user_profiles.id作为user_id，确保外键约束正常工作）
     const { data: order, error: orderError } = await supabase
       .from('recharge_orders')
       .insert({
-        user_id: orderData.userId, // 使用auth.users.id而不是user_profiles.id
+        user_id: userProfile.id, // 使用user_profiles.id而不是auth.users.id
         order_number: orderNumber,
         name: orderData.businessType,
         phone_number: orderData.targetAccount,

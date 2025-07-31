@@ -18,6 +18,9 @@ import {
   Zap,
   AlertTriangle,
   CheckCircle,
+  Smartphone,
+  Signal,
+  Loader2,
   XCircle,
   Timer,
   Camera,
@@ -42,6 +45,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { adminSupabase } from "@/utils/adminSupabase";
+import { queryPhoneBalance, formatBalance, getOperatorColor } from "@/services/phoneBalanceService";
 
 // 订单类型定义
 interface OnlineOrder {
@@ -93,12 +97,69 @@ const OrderDetailModal = ({
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [completedAmount, setCompletedAmount] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [phoneBalanceInfo, setPhoneBalanceInfo] = useState<{
+    balance: string;
+    operator: string;
+    province: string;
+    city: string;
+  } | null>(null);
+  const [isQueryingPhoneBalance, setIsQueryingPhoneBalance] = useState(false);
+  const [phoneBalanceError, setPhoneBalanceError] = useState<string>("");
 
   useEffect(() => {
     if (order) {
       setCompletedAmount(order.completed_amount?.toString() || '');
     }
   }, [order]);
+
+  // 查询手机号余额
+  const handleQueryPhoneBalance = async (phoneNumber: string) => {
+    if (!phoneNumber || !/^1[3-9]\d{9}$/.test(phoneNumber)) {
+      toast({
+        variant: "destructive",
+        title: "查询失败",
+        description: "请输入有效的手机号码"
+      });
+      return;
+    }
+
+    setIsQueryingPhoneBalance(true);
+    setPhoneBalanceInfo(null);
+    setPhoneBalanceError("");
+
+    try {
+      const result = await queryPhoneBalance(phoneNumber);
+      
+      if (result.code === 0 && result.data) {
+        setPhoneBalanceInfo({
+          balance: result.data.balance,
+          operator: result.data.operator,
+          province: result.data.province,
+          city: result.data.city
+        });
+        toast({
+          title: "查询成功",
+          description: "手机余额查询完成"
+        });
+      } else {
+        setPhoneBalanceError(result.message || "查询失败");
+        toast({
+          variant: "destructive",
+          title: "查询失败",
+          description: result.message || "查询失败"
+        });
+      }
+    } catch (error) {
+      setPhoneBalanceError("查询失败，请稍后重试");
+      toast({
+        variant: "destructive",
+        title: "查询失败",
+        description: "查询失败，请稍后重试"
+      });
+    } finally {
+      setIsQueryingPhoneBalance(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -244,9 +305,72 @@ const OrderDetailModal = ({
                   {order.order_type.includes('话费') && (
                     <>
                       {order.metadata.phone && (
-                        <div>
-                          <label className="text-sm text-gray-600">充值手机号</label>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <label className="text-sm text-gray-600">充值手机号</label>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleQueryPhoneBalance(String(order.metadata.phone))}
+                              disabled={isQueryingPhoneBalance}
+                              className="h-6 px-2 text-xs"
+                            >
+                              {isQueryingPhoneBalance ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <RefreshCw className="w-3 h-3" />
+                              )}
+                              <span className="ml-1">{isQueryingPhoneBalance ? '查询中' : '查询余额'}</span>
+                            </Button>
+                          </div>
                           <p className="font-medium text-gray-800">{order.metadata.phone}</p>
+                          
+                          {/* 余额信息显示 */}
+                          {phoneBalanceInfo && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                              <div className="flex items-center mb-2">
+                                <Smartphone className="w-4 h-4 text-blue-500 mr-2" />
+                                <span className="text-sm font-medium text-blue-700">号码信息</span>
+                              </div>
+                              
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">当前余额:</span>
+                                  <span className="font-bold text-green-600">
+                                    {formatBalance(phoneBalanceInfo.balance)}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">运营商:</span>
+                                  <span className={`text-xs px-2 py-1 rounded-full ${getOperatorColor(phoneBalanceInfo.operator)}`}>
+                                    {phoneBalanceInfo.operator}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">归属地:</span>
+                                  <span className="text-gray-800">
+                                    {phoneBalanceInfo.province} {phoneBalanceInfo.city}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex items-center text-xs text-gray-500 mt-2">
+                                  <Signal className="w-3 h-3 mr-1" />
+                                  <span>余额信息仅供参考</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* 余额查询错误显示 */}
+                          {phoneBalanceError && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+                              <div className="text-sm text-red-600 text-center">
+                                <span>{phoneBalanceError}</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                       {order.metadata.amount && (
@@ -397,6 +521,9 @@ const OrderDetailModal = ({
                     const skipFields = ['phone', 'amount', 'name', 'cardNumber', 'bankName', 'qrCode', 'account', 'gameType', 'company', 'customerName'];
                     if (skipFields.includes(key) || !value) return null;
                     
+                    // 如果有regionName，跳过region字段显示
+                    if (key === 'region' && order.metadata?.regionName) return null;
+                    
                     // 字段标签映射
                     const fieldLabelMap: Record<string, string> = {
                       'discount': '折扣',
@@ -405,16 +532,26 @@ const OrderDetailModal = ({
                       'address': '地址',
                       'remark': '备注',
                       'region': '地区',
+                      'regionName': '地区',
                       'type': '类型',
                       'description': '说明'
                     };
                     
                     const displayLabel = fieldLabelMap[key] || key;
                     
+                    // 对于地区字段，优先显示regionName而不是region代码
+                    let displayValue = String(value);
+                    if (key === 'region' && order.metadata?.regionName) {
+                      displayValue = String(order.metadata.regionName);
+                    } else if (key === 'regionName') {
+                      // 如果是regionName字段，直接显示
+                      displayValue = String(value);
+                    }
+                    
                     return (
                       <div key={key}>
                         <label className="text-sm text-gray-600">{displayLabel}</label>
-                        <p className="font-medium text-gray-800">{String(value)}</p>
+                        <p className="font-medium text-gray-800">{displayValue}</p>
                       </div>
                     );
                   })}
@@ -424,7 +561,7 @@ const OrderDetailModal = ({
               {/* 原有的基本字段 */}
               {order.phone_number && (
                 <div>
-                  <label className="text-sm text-gray-600">手机号码</label>
+                  <label className="text-sm text-gray-600">{getAccountFieldLabel(order.payment_method || '')}</label>
                   <p className="font-medium text-gray-800">{order.phone_number}</p>
                 </div>
               )}
@@ -590,6 +727,26 @@ const OnlineOrdersPage = () => {
     completed: 0,
     timeout: 0
   });
+
+  // 根据业务类型获取账号字段名称
+  const getAccountFieldLabel = (businessType: string) => {
+    switch (businessType) {
+      case '电费充值':
+      case 'electricity':
+        return '充值户号';
+      case '话费充值':
+      case 'mobile':
+        return '充值手机号';
+      case '燃气充值':
+      case 'gas':
+        return '燃气户号';
+      case '水费充值':
+      case 'water':
+        return '水费户号';
+      default:
+        return '充值账号';
+    }
+  };
 
   // 从数据库获取真实订单数据
   const fetchOrders = useCallback(async () => {
@@ -1054,7 +1211,7 @@ const OnlineOrdersPage = () => {
       case 'pending':
         return <Badge variant="outline" className="text-yellow-600 border-yellow-600"><Clock className="w-3 h-3 mr-1" />待处理</Badge>;
       case 'grabbed':
-        return <Badge variant="outline" className="text-blue-600 border-blue-600"><Upload className="w-3 h-3 mr-1" />已抢单</Badge>;
+        return <Badge variant="outline" className="text-orange-600 border-orange-600"><Upload className="w-3 h-3 mr-1" />已抢单</Badge>;
       case 'processing':
         return <Badge variant="outline" className="text-purple-600 border-purple-600"><Clock className="w-3 h-3 mr-1" />处理中</Badge>;
       case 'completed':

@@ -164,9 +164,10 @@ const CreditCard = () => {
     
     setIsSubmitting(true);
     try {
-      // 计算实际消费金额（USDT）
+      // 计算实际消费金额（USDT）- 应用折扣后再转换
       const amountCNY = parseFloat(formData.amount);
-      const actualAmountUSDT = parseFloat((amountCNY / config.exchangeRate).toFixed(2));
+      const discountedAmount = amountCNY * config.discountRate; // 应用折扣
+      const actualAmountUSDT = parseFloat((discountedAmount / config.exchangeRate).toFixed(2));
       
       const order = await createBusinessOrder({
         userId: user.id,
@@ -180,7 +181,9 @@ const CreditCard = () => {
           cardNumber: formData.cardNumber,
           bankName: formData.bankName,
           amount: formData.amount,
-          exchange_rate: config.exchangeRate
+          exchange_rate: config.exchangeRate,
+          discount: `${(config.discountRate * 10).toFixed(1)}折`,
+          discount_rate: config.discountRate
         }
       });
       

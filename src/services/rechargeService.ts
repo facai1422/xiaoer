@@ -49,6 +49,10 @@ export const createRechargeOrder = async (data: RechargeOrder) => {
     }
     
     const orderNumber = `RO${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    
+    // 设置订单过期时间（30分钟后）
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
 
     // 首先获取用户档案的正确ID
     try {
@@ -108,7 +112,8 @@ export const createRechargeOrder = async (data: RechargeOrder) => {
         user_name: user.email?.split('@')[0] || '用户',
         target_account: (data.metadata?.cardNumber as string) || data.phone || '',
         recharge_amount: Number(data.amount),
-        metadata: data.metadata || null
+        metadata: data.metadata || null,
+        expires_at: expiresAt.toISOString()
       };
 
       const { data: order, error } = await supabase

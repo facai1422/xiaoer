@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getPaymentAddresses, createRechargeOrder } from "@/services/rechargeService";
 import { useAuth } from "@/hooks/useAuth";
+import { RechargeOrderDialog } from "@/components/wallet-recharge/RechargeOrderDialog";
 
 interface PaymentAddress {
   id: string;
@@ -24,6 +25,8 @@ const WalletRecharge = () => {
   const [selectedAddress, setSelectedAddress] = useState<PaymentAddress | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
+  const [currentOrder, setCurrentOrder] = useState<any>(null);
 
   // 加载支付地址
   const loadAddresses = async () => {
@@ -67,16 +70,31 @@ const WalletRecharge = () => {
 
     setIsSubmitting(true);
     try {
-      await createRechargeOrder({
+      const order = await createRechargeOrder({
         userId: user.id,
         phone: user.phone || "",
         amount: parseFloat(amount),
-        type: "USDT充值"
+        type: "USDT充值",
+        metadata: {
+          paymentAddress: selectedAddress.address
+        }
       });
-      toast.success("充值订单创建成功");
+      
+      if (order) {
+        // 设置订单和支付地址
+        setCurrentOrder({
+          ...order,
+          payment_address: selectedAddress.address
+        });
+        setOrderDialogOpen(true);
+        toast.success("充值订单创建成功！");
+        
+        // 清空金额输入
+        setAmount("");
+      }
     } catch (error) {
       console.error("创建订单失败:", error);
-      toast.error("创建订单失败");
+      toast.error("创建订单失败，请重试");
     } finally {
       setIsSubmitting(false);
     }
@@ -182,10 +200,19 @@ const WalletRecharge = () => {
             <h4 className="font-medium text-blue-800 mb-2">充值说明</h4>
             <ul className="text-sm text-blue-700 space-y-1">
               <li>• 最小充值金额为 10 USDT</li>
+              <li>• 订单有效期30分钟，请及时完成支付</li>
               <li>• 充值完成后余额将自动更新</li>
               <li>• 如遇到问题请联系在线客服</li>
             </ul>
           </Card>
+          
+          {/* 充值订单对话框 */}
+          <RechargeOrderDialog
+            open={orderDialogOpen}
+            onOpenChange={setOrderDialogOpen}
+            order={currentOrder}
+            paymentAddress={selectedAddress?.address}
+          />
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { AlertTriangle, CheckCircle, XCircle, Info } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Announcement {
   id: number;
@@ -16,90 +16,86 @@ interface Announcement {
 }
 
 export const WebsiteAnnouncements = () => {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 暂时使用默认数据，后续完善数据库查询
-    setDefaultAnnouncements();
-    
-    // 设置自动轮播
-    intervalRef.current = setInterval(() => {
-      setCurrentIndex(prev => {
-        if (announcements.length === 0) return 0;
-        return (prev + 1) % announcements.length;
-      });
-    }, 8000); // 每8秒切换一次
+    fetchAnnouncements();
+  }, []);
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+  const fetchAnnouncements = async () => {
+    try {
+      setLoading(true);
+      
+      // 直接使用 PostgreSQL 查询
+      const { data, error } = await supabase
+        .from('website_announcements' as any)
+        .select('*')
+        .eq('is_active', true)
+        .eq('is_scrolling', true)
+        .order('display_order', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('获取公告失败:', error);
+        // 如果数据库查询失败，使用默认公告
+        setDefaultAnnouncement();
+        return;
       }
+
+      if (data && data.length > 0) {
+        const announcementData = data[0] as any;
+        const announcement: Announcement = {
+          id: announcementData.id,
+          title: announcementData.title,
+          content: announcementData.content,
+          type: announcementData.type,
+          is_active: announcementData.is_active,
+          is_scrolling: announcementData.is_scrolling,
+          scroll_speed: announcementData.scroll_speed || 50,
+          display_order: announcementData.display_order,
+          start_time: announcementData.start_time,
+          end_time: announcementData.end_time,
+          created_at: announcementData.created_at
+        };
+        setAnnouncement(announcement);
+      } else {
+        // 如果没有数据，使用默认公告
+        setDefaultAnnouncement();
+      }
+    } catch (error) {
+      console.error('获取公告异常:', error);
+      setDefaultAnnouncement();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setDefaultAnnouncement = () => {
+    const defaultAnnouncement: Announcement = {
+      id: 1,
+      title: "欢迎使用惠享生活平台",
+      content: "我们提供便捷的充值缴费服务，享受优惠折扣！信用卡代还，花呗代还，游戏充值，话费充值，电费充值，各种网贷代还，各种贷款代还",
+      type: "info",
+      is_active: true,
+      is_scrolling: true,
+      scroll_speed: 50,
+      display_order: 1,
+      created_at: new Date().toISOString()
     };
-  }, [announcements.length]);
-
-  const setDefaultAnnouncements = () => {
-    const defaultAnnouncements: Announcement[] = [
-      {
-        id: 1,
-        title: "欢迎使用惠享生活平台",
-        content: "我们提供便捷的充值缴费服务，享受优惠折扣！",
-        type: "info",
-        is_active: true,
-        is_scrolling: true,
-        scroll_speed: 50,
-        display_order: 1,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 2,
-        title: "新用户福利",
-        content: "新注册用户首次充值享受额外95折优惠！",
-        type: "success",
-        is_active: true,
-        is_scrolling: true,
-        scroll_speed: 50,
-        display_order: 2,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 3,
-        title: "客服服务时间",
-        content: "在线客服服务时间：9:00-21:00，如有问题请及时联系",
-        type: "info",
-        is_active: true,
-        is_scrolling: true,
-        scroll_speed: 50,
-        display_order: 3,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 4,
-        title: "系统升级通知",
-        content: "为了提供更好的服务，系统将在每日凌晨2-4点进行维护",
-        type: "warning",
-        is_active: true,
-        is_scrolling: true,
-        scroll_speed: 50,
-        display_order: 4,
-        created_at: new Date().toISOString()
-      }
-    ];
-    setAnnouncements(defaultAnnouncements);
+    setAnnouncement(defaultAnnouncement);
   };
 
   const getAnnouncementIcon = (type: string) => {
-    switch (type) {
-      case 'warning':
-        return <AlertTriangle className="w-4 h-4 text-orange-500" />;
-      case 'success':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'error':
-        return <XCircle className="w-4 h-4 text-red-500" />;
-      default:
-        return <Info className="w-4 h-4 text-blue-500" />;
-    }
+    // 统一使用GIF图标
+    return (
+      <img 
+        src="/lovable-uploads/icons8.gif" 
+        alt="通知图标" 
+        className="w-4 h-4 object-contain"
+      />
+    );
   };
 
   const getAnnouncementStyle = (type: string) => {
@@ -115,47 +111,51 @@ export const WebsiteAnnouncements = () => {
     }
   };
 
-  if (announcements.length === 0) {
+  // 加载中状态
+  if (loading) {
+    return (
+      <div className="mx-4 mb-4">
+        <div className="border rounded-lg p-3 bg-gray-50">
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-gray-300 rounded animate-pulse"></div>
+            <div className="flex-1">
+              <div className="h-4 bg-gray-300 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 没有公告时不显示
+  if (!announcement) {
     return null;
   }
 
-  const currentAnnouncement = announcements[currentIndex];
-
   return (
     <div className="mx-4 mb-4">
-      <div className={`border rounded-lg p-3 transition-all duration-500 ease-in-out ${getAnnouncementStyle(currentAnnouncement.type)}`}>
+      <div className={`border rounded-lg p-3 transition-all duration-500 ease-in-out ${getAnnouncementStyle(announcement.type)}`}>
         <div className="flex items-center space-x-2">
           <div className="flex-shrink-0">
-            {getAnnouncementIcon(currentAnnouncement.type)}
+            {getAnnouncementIcon(announcement.type)}
           </div>
           
           <div className="flex-1 min-w-0">
             <div className="overflow-hidden whitespace-nowrap">
+              {/* eslint-disable-next-line react/forbid-dom-props */}
               <div 
                 className="inline-block text-sm font-medium animate-marquee"
                 style={{
-                  animationDuration: currentAnnouncement.is_scrolling 
-                    ? `${Math.max(10, currentAnnouncement.content.length * 0.2)}s` 
+                  animationDuration: announcement.is_scrolling 
+                    ? `${Math.max(10, announcement.content.length * 0.2)}s` 
                     : '0s'
                 }}
               >
-                <span className="font-semibold">{currentAnnouncement.title}：</span>
-                {currentAnnouncement.content}
+                <span className="font-semibold">{announcement.title}：</span>
+                {announcement.content}
               </div>
             </div>
           </div>
-
-          {/* 分页指示器 */}
-          {announcements.length > 1 && (
-            <div className="flex space-x-1">
-              {announcements.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-colors duration-300 ${index === currentIndex ? 'bg-current' : 'bg-current opacity-30'}`}
-                />
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

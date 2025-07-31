@@ -95,12 +95,7 @@ export const ProductPageTemplate: React.FC<ProductPageTemplateProps> = ({
             <p className="text-gray-600 mb-1">{subtitle}</p>
             <p className="text-sm text-gray-500">{description}</p>
             
-            {/* 配置更新时间提示 */}
-            {lastUpdated && (
-              <div className="mt-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full inline-block">
-                💡 配置 {formatLastUpdated(lastUpdated)}
-              </div>
-            )}
+
           </div>
 
           {/* 加载状态 */}
@@ -131,15 +126,7 @@ export const ProductPageTemplate: React.FC<ProductPageTemplateProps> = ({
                 {/* 子组件内容 */}
                 {children}
                 
-                {/* 当前钱包余额 */}
-                <div className="mt-4 mb-6 bg-gray-50 rounded-lg p-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">当前钱包余额:</span>
-                    <span className="text-lg font-bold text-blue-600">
-                      {userBalance.toFixed(2)} USDT
-                    </span>
-                  </div>
-                </div>
+
                 
                 {/* 提交按钮 */}
                 <div>

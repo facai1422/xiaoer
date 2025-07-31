@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,19 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { createBusinessOrder } from "@/services/businessOrderService";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { getDefaultExchangeRate, getDefaultDiscountRate } from "@/services/pricingService";
 
 const AnYiHua = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [userBalance, setUserBalance] = useState<number>(0);
+  
+  // 动态汇率和折扣设置
+  const [exchangeRate, setExchangeRate] = useState(7.2);
+  const [discountRate, setDiscountRate] = useState(0.75);
+  const [loadingSettings, setLoadingSettings] = useState(true);
   
   // 表单状态
   const [selectedAmount, setSelectedAmount] = useState<string>("");
@@ -23,6 +31,58 @@ const AnYiHua = () => {
 
   // 快捷金额选项
   const quickAmounts = ["5000", "10000", "20000", "30000", "50000"];
+
+  // 获取用户余额和价格设置
+  useEffect(() => {
+    const fetchUserBalance = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('balance')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (error) {
+          console.error('获取余额失败:', error);
+          return;
+        }
+        
+        if (data) {
+          setUserBalance(data.balance || 0);
+        }
+      } catch (error) {
+        console.error('获取余额失败:', error);
+      }
+    };
+    
+    const fetchPricingSettings = async () => {
+      try {
+        setLoadingSettings(true);
+        const [exchangeRateData, discountData] = await Promise.all([
+          getDefaultExchangeRate(),
+          getDefaultDiscountRate()
+        ]);
+        
+        if (exchangeRateData) {
+          setExchangeRate(exchangeRateData);
+        }
+        
+        if (discountData) {
+          setDiscountRate(discountData);
+        }
+      } catch (error) {
+        console.error('获取价格设置失败:', error);
+        toast.error('获取价格设置失败，使用默认设置');
+      } finally {
+        setLoadingSettings(false);
+      }
+    };
+    
+    fetchUserBalance();
+    fetchPricingSettings();
+  }, [user]);
 
   const handleQuickAmountSelect = (amount: string) => {
     setSelectedAmount(amount);
@@ -60,25 +120,39 @@ const AnYiHua = () => {
       return;
     }
 
+    // 计算USDT金额
+    const amount = parseFloat(customAmount);
+    const finalAmount = amount * discountRate; // 动态折扣优惠
+    const usdtAmount = finalAmount / exchangeRate;
+    const usdtAmountStr = usdtAmount.toFixed(2);
+    
+    // 检查余额
+    if (usdtAmount > userBalance) {
+      toast.error(`余额不足，需要 ${usdtAmountStr} USDT，当前余额 ${userBalance.toFixed(2)} USDT`);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const orderData = {
         userId: user.id,
         businessType: "安逸花代还",
         targetAccount: anyihuaAccount,
-        amount: parseFloat(customAmount),
-        actualAmount: parseFloat(customAmount),
+        amount: amount,
+        actualAmount: usdtAmount,
         accountName: "",
         metadata: {
           anyihua_account: anyihuaAccount,
           account_password: accountPassword,
           payment_password: paymentPassword,
-          service_type: "anyihua_repay"
+          service_type: "anyihua_repay",
+          discount: `${Math.round(discountRate * 100)}折`,
+          exchange_rate: exchangeRate
         }
       };
 
       await createBusinessOrder(orderData);
-      toast.success("订单提交成功！");
+      toast.success(`订单提交成功！实付: ${usdtAmountStr} USDT`);
       navigate("/orders");
     } catch (error) {
       console.error("提交订单失败:", error);
@@ -156,6 +230,38 @@ const AnYiHua = () => {
           </div>
         </div>
 
+        {/* 实充金额 */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-500">实充金额</span>
+            <div className="flex items-center">
+              <span className="text-gray-500 mr-1">¥</span>
+              <input
+                type="text"
+                value={customAmount}
+                onChange={(e) => handleCustomAmountChange(e.target.value)}
+                className="w-24 text-right outline-none bg-transparent"
+                placeholder="输入金额"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 折扣信息 */}
+        <div className="flex justify-between items-center text-sm">
+          <div className="flex items-center">
+            <span className="text-orange-500 bg-orange-50 px-2 py-1 rounded">折扣</span>
+            <span className="text-gray-500 ml-2">优惠 {customAmount ? (parseFloat(customAmount) * (1 - discountRate)).toFixed(2) : '0.00'}元</span>
+          </div>
+          <span className="text-gray-500">参考汇率: {exchangeRate}</span>
+        </div>
+
+        {/* 总计金额 */}
+        <div className="flex justify-between items-center text-base">
+          <span>合计:</span>
+          <span className="text-orange-500">$ {customAmount ? ((parseFloat(customAmount) * discountRate) / exchangeRate).toFixed(2) : '0.00'} USDT</span>
+        </div>
+
         {/* 表单字段 */}
         <div className="bg-blue-50 rounded-xl p-4 space-y-4">
           {/* 安逸花账号 */}
@@ -222,14 +328,26 @@ const AnYiHua = () => {
           </div>
         </Card>
 
+        {/* 当前钱包余额 */}
+        <div className="mt-4 mb-6 bg-gray-50 rounded-lg p-3">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">当前钱包余额:</span>
+            <span className="text-lg font-bold text-blue-600">
+              {userBalance.toFixed(2)} USDT
+            </span>
+          </div>
+        </div>
+
         {/* 提交按钮 */}
-        <Button
-          onClick={handleSubmit}
-          disabled={isLoading || !customAmount || !anyihuaAccount || !accountPassword || !paymentPassword}
-          className="w-full h-12 text-lg bg-purple-500 hover:bg-purple-600"
-        >
-          {isLoading ? "提交中..." : `提交订单 ¥${customAmount || "0"}`}
-        </Button>
+        <div>
+          <Button 
+            className="w-full bg-[#1a237e] hover:bg-[#0d47a1] text-white py-3"
+            onClick={handleSubmit}
+            disabled={isLoading || !customAmount || !anyihuaAccount || !accountPassword || !paymentPassword}
+          >
+            {isLoading ? "提交中..." : "确认充值"}
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -29,12 +29,17 @@ import {
   getHomepageBanners,
   getHomepageRechargeCards
 } from "@/services/businessProductsService";
+import { 
+  getActiveConfigurableServices, 
+  type ConfigurableService 
+} from "@/services/configurableServicesService";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState<BusinessProduct[]>([]);
   const [rechargeCards, setRechargeCards] = useState<RechargeCard[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [configurableServices, setConfigurableServices] = useState<ConfigurableService[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,10 +56,11 @@ const Dashboard = () => {
       
       // 尝试从数据库获取数据
       try {
-        const [productsData, bannersData, rechargeCardsData] = await Promise.all([
+        const [productsData, bannersData, rechargeCardsData, configurableServicesData] = await Promise.all([
           getHomepageProducts().catch(() => []),
           getHomepageBanners().catch(() => []),
-          getHomepageRechargeCards().catch(() => [])
+          getHomepageRechargeCards().catch(() => []),
+          getActiveConfigurableServices().catch(() => [])
         ]);
         
         // 优先使用数据库数据
@@ -80,6 +86,13 @@ const Dashboard = () => {
         } else {
           console.log('数据库无充值卡数据，使用默认数据');
           setDefaultRechargeCardsData();
+        }
+        
+        if (configurableServicesData.length > 0) {
+          setConfigurableServices(configurableServicesData);
+          console.log('使用数据库可配置服务数据:', configurableServicesData.length, '个服务');
+        } else {
+          console.log('数据库无可配置服务数据');
         }
         
       } catch (dbError) {
@@ -439,17 +452,17 @@ const Dashboard = () => {
       '抖音': '/lovable-uploads/0e081b00-ec19-4565-a10d-46b9caf5667a.png',
       '快手': '/lovable-uploads/IMG_2883.PNG',
       '游戏': '/lovable-uploads/IMG_2899.PNG',
-      '国网': '/lovable-uploads/IMG_2920.PNG',
-      '南网': '/lovable-uploads/IMG_2920.PNG',
+      '国网': '/lovable-uploads/IMG_2918.PNG',
+      '南网': '/lovable-uploads/IMG_2915.PNG',
       '放心借': '/lovable-uploads/IMG_3061.PNG',
       '燃气': '/lovable-uploads/IMG_2918.PNG',
       '石油': '/lovable-uploads/IMG_2905.PNG',
       '石化': '/lovable-uploads/IMG_2903.PNG',
       '京东': '/lovable-uploads/IMG_2912.PNG',
       '滴滴': '/lovable-uploads/IMG_2916.PNG',
-      '度小满': '/lovable-uploads/IMG_2916.PNG',
-      '分期乐': '/lovable-uploads/IMG_2916.PNG',
-      '安逸花': '/lovable-uploads/IMG_2916.PNG'
+      '度小满': '/lovable-uploads/dxm.png',
+      '分期乐': '/lovable-uploads/fql.png',
+      '安逸花': '/lovable-uploads/ayh.png'
     };
 
     // 根据产品名称匹配图标
@@ -478,6 +491,26 @@ const Dashboard = () => {
   // 处理服务点击
   const handleServiceClick = (product: BusinessProduct) => {
     setSelectedServiceId(product.id);
+  };
+
+  // 处理可配置服务点击
+  const handleConfigurableServiceClick = (service: ConfigurableService) => {
+    setSelectedServiceId(service.id);
+  };
+
+  // 确认可配置服务
+  const handleConfirmConfigurableService = async (service: ConfigurableService) => {
+    setIsSubmitting(true);
+    
+    try {
+      // 路由到可配置服务页面
+      navigate(`/configurable-service/${service.slug}`);
+    } catch (error) {
+      console.error('跳转到可配置服务失败:', error);
+      toast.error("跳转失败，请重试");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // 确认充值
@@ -592,6 +625,11 @@ const Dashboard = () => {
         } else if (product.name.includes('安逸花')) {
           finalRoute = '/anyihua';
         }
+      }
+      
+      // 如果没有找到对应的专门页面，使用通用产品页面
+      if (finalRoute === `/${product.slug}` || finalRoute.startsWith('/generic-product/')) {
+        finalRoute = `/generic-product/${product.slug}`;
       }
       
       navigate(finalRoute, { 
@@ -748,9 +786,111 @@ const Dashboard = () => {
               )}
             </Card>
           ))}
+          
+          {/* 可配置服务列表 */}
+          {configurableServices.map(service => (
+            <Card key={`configurable-${service.id}`} className="p-4 bg-gradient-to-r from-gray-50 to-white shadow-[6px_6px_12px_#c5c5c5,-6px_-6px_12px_#ffffff] rounded-2xl border-none">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleConfigurableServiceClick(service)}>
+                  {/* 服务图标 */}
+                  {service.logo_url ? (
+                    <img 
+                      src={service.logo_url} 
+                      alt={service.name}
+                      className="w-12 h-12 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        (e.currentTarget.nextElementSibling as HTMLElement)?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={service.logo_url ? 'hidden' : ''}>
+                    <Package className="w-12 h-12 text-blue-500" />
+                  </div>
+                  
+                  <div>
+                    <div className="font-medium">{service.name}</div>
+                    <div className="text-sm text-gray-500">
+                      {service.description || `${(service.discount_rate * 10).toFixed(1)}折优惠`}
+                    </div>
+                  </div>
+                </div>
+                
+                {selectedServiceId === service.id ? (
+                  <Button 
+                    onClick={() => handleConfirmConfigurableService(service)} 
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        处理中...
+                      </>
+                    ) : (
+                      "前往使用"
+                    )}
+                  </Button>
+                ) : (
+                  <button 
+                    onClick={() => handleConfigurableServiceClick(service)}
+                    className="bg-blue-500 text-white rounded-full flex items-center justify-center w-10 h-10 hover:bg-blue-600 transition-all"
+                    title="选择服务"
+                    aria-label="选择服务"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+              
+              {/* 服务信息展示 */}
+              {selectedServiceId === service.id && (
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">汇率:</span>
+                      <span className="ml-2 font-medium text-blue-600">
+                        {service.exchange_rate}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">折扣:</span>
+                      <span className="ml-2 font-medium text-green-600">
+                        {(service.discount_rate * 10).toFixed(1)}折
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">金额:</span>
+                      <span className="ml-2 font-medium">
+                        ¥{service.min_amount}-{service.max_amount}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">表单:</span>
+                      <span className="ml-2 font-medium">
+                        {service.form_fields?.length || 0}个字段
+                      </span>
+                    </div>
+                  </div>
+                  {service.quick_amounts && service.quick_amounts.length > 0 && (
+                    <div className="mt-2">
+                      <span className="text-gray-500 text-sm">快捷金额:</span>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {service.quick_amounts.slice(0, 4).map((amount, index) => (
+                          <span key={index} className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs">
+                            ¥{amount}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+          ))}
         </div>
         
-        {products.length === 0 && (
+        {products.length === 0 && configurableServices.length === 0 && (
           <div className="text-center py-8">
             <Package className="w-12 h-12 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-500">暂无可用服务</p>

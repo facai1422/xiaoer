@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Package, Clock, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Smartphone, Signal, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getOrderDetail } from "@/services/businessOrderService";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
+import { queryPhoneBalance, formatBalance, getOperatorColor } from "@/services/phoneBalanceService";
 
 interface OrderInfo {
   id: string;
@@ -46,12 +47,54 @@ const OrderDetail = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [phoneBalanceInfo, setPhoneBalanceInfo] = useState<{
+    balance: string;
+    operator: string;
+    province: string;
+    city: string;
+  } | null>(null);
+  const [isQueryingPhoneBalance, setIsQueryingPhoneBalance] = useState(false);
+  const [phoneBalanceError, setPhoneBalanceError] = useState<string>("");
 
   useEffect(() => {
     if (orderId) {
       loadOrderDetail();
     }
   }, [orderId]);
+
+  // 查询手机号余额
+  const handleQueryPhoneBalance = async (phoneNumber: string) => {
+    if (!phoneNumber || !/^1[3-9]\d{9}$/.test(phoneNumber)) {
+      toast.error("请输入有效的手机号码");
+      return;
+    }
+
+    setIsQueryingPhoneBalance(true);
+    setPhoneBalanceInfo(null);
+    setPhoneBalanceError("");
+
+    try {
+      const result = await queryPhoneBalance(phoneNumber);
+      
+      if (result.code === 0 && result.data) {
+        setPhoneBalanceInfo({
+          balance: result.data.balance,
+          operator: result.data.operator,
+          province: result.data.province,
+          city: result.data.city
+        });
+        toast.success("余额查询成功");
+      } else {
+        setPhoneBalanceError(result.message || "查询失败");
+        toast.error(result.message || "查询失败");
+      }
+    } catch (error) {
+      setPhoneBalanceError("查询失败，请稍后重试");
+      toast.error("查询失败，请稍后重试");
+    } finally {
+      setIsQueryingPhoneBalance(false);
+    }
+  };
 
   const loadOrderDetail = async () => {
     try {
@@ -130,6 +173,8 @@ const OrderDetail = () => {
         return '处理中';
       case 'transferred':
         return '已转账';
+      case 'grabbed':
+        return '已抢单';
       case 'failed':
       case 'cancelled':
         return '已取消';
@@ -147,6 +192,7 @@ const OrderDetail = () => {
       case 'pending':
       case 'proof_uploaded':
       case 'transferred':
+      case 'grabbed':
       case '处理中':
         return 'text-yellow-600';
       case 'failed':
@@ -156,6 +202,57 @@ const OrderDetail = () => {
       default:
         return 'text-gray-600';
     }
+  };
+
+  // 根据业务类型获取账号字段名称
+  const getAccountFieldLabel = (businessType: string) => {
+    switch (businessType) {
+      case '电费充值':
+      case 'electricity':
+        return '充值户号';
+      case '话费充值':
+      case 'mobile':
+        return '充值手机号';
+      case '燃气充值':
+      case 'gas':
+        return '燃气户号';
+      case '水费充值':
+      case 'water':
+        return '水费户号';
+      default:
+        return '充值账号';
+    }
+  };
+
+  // 根据业务类型获取名称字段标签
+  const getNameFieldLabel = (businessType: string) => {
+    switch (businessType) {
+      case '电费充值':
+      case 'electricity':
+        return '地区';
+      case '燃气充值':
+      case 'gas':
+        return '燃气公司';
+      case '信用卡还款':
+        return '开户银行';
+      case '花呗还款':
+        return '支付宝账户';
+      default:
+        return '账号名称';
+    }
+  };
+
+  // 从metadata获取显示值
+  const getDisplayValue = (order: OrderInfo, field: string) => {
+    const metadata = order.metadata as OrderMetadata;
+    
+    // 对于地区字段，优先显示regionName而不是region代码
+    if (field === 'region' && metadata?.regionName) {
+      return metadata.regionName;
+    }
+    
+    // 其他情况返回原值
+    return order.user_name;
   };
 
   const getPaymentChannelName = (channel: string) => {
@@ -254,13 +351,13 @@ const OrderDetail = () => {
               <span className="font-medium">{order.name || order.payment_method}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">充值账号</span>
+              <span className="text-gray-600">{getAccountFieldLabel(order.name || order.payment_method)}</span>
               <span className="font-medium">{order.target_account}</span>
             </div>
-            {order.user_name && (
+            {(order.user_name || (order.metadata as OrderMetadata)?.regionName) && (
               <div className="flex justify-between">
-                <span className="text-gray-600">账号名称</span>
-                <span className="font-medium">{order.user_name}</span>
+                <span className="text-gray-600">{getNameFieldLabel(order.name || order.payment_method)}</span>
+                <span className="font-medium">{getDisplayValue(order, 'region')}</span>
               </div>
             )}
             <div className="flex justify-between">
@@ -422,9 +519,74 @@ const OrderDetail = () => {
                     {(order.payment_method === '话费充值' || order.payment_method?.includes('话费')) && (
                       <>
                         {metadata?.phone && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">充值手机号</span>
-                            <span className="font-medium">{metadata.phone}</span>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">充值手机号</span>
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium">{metadata.phone}</span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleQueryPhoneBalance(metadata.phone)}
+                                  disabled={isQueryingPhoneBalance}
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  {isQueryingPhoneBalance ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <RefreshCw className="w-3 h-3" />
+                                  )}
+                                  <span className="ml-1">{isQueryingPhoneBalance ? '查询中' : '查询余额'}</span>
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            {/* 余额信息显示 */}
+                            {phoneBalanceInfo && (
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                                <div className="flex items-center mb-2">
+                                  <Smartphone className="w-4 h-4 text-blue-500 mr-2" />
+                                  <span className="text-sm font-medium text-blue-700">号码信息</span>
+                                </div>
+                                
+                                <div className="space-y-1 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">当前余额:</span>
+                                    <span className="font-bold text-green-600">
+                                      {formatBalance(phoneBalanceInfo.balance)}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">运营商:</span>
+                                    <span className={`text-xs px-2 py-1 rounded-full ${getOperatorColor(phoneBalanceInfo.operator)}`}>
+                                      {phoneBalanceInfo.operator}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">归属地:</span>
+                                    <span className="text-gray-800">
+                                      {phoneBalanceInfo.province} {phoneBalanceInfo.city}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="flex items-center text-xs text-gray-500 mt-2">
+                                    <Signal className="w-3 h-3 mr-1" />
+                                    <span>余额信息仅供参考</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* 余额查询错误显示 */}
+                            {phoneBalanceError && (
+                              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+                                <div className="text-sm text-red-600 text-center">
+                                  <span>{phoneBalanceError}</span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </>

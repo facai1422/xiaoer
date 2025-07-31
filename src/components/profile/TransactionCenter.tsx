@@ -18,7 +18,7 @@ export const TransactionCenter = ({ onNavigate }: TransactionCenterProps) => {
   };
 
   const handleAppDownload = () => {
-    window.open('https://app.88pay.cn/', '_blank');
+    window.open('http://209.178.235.55/惠享生活.apk.1', '_blank');
   };
 
   const menuItems = [

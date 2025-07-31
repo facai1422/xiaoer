@@ -22,6 +22,7 @@ import UsersPage from "@/modules/admin/pages/UsersPage"
 
 // 业务管理
 import ProductsPage from "./business/RealProductsPage"
+import ConfigurableServicesPage from "./business/ConfigurableServicesPage"
 
 // 财务管理
 import USDTManagePage from "./finance/USDTManagePage"
@@ -102,14 +103,15 @@ const AdminRoutes = () => {
             <Route path="agents" element={<AgentsPage />} />
             <Route path="data-dashboard" element={<DataDashboardPage />} />
             
-            {/* 业务管理 */}
-            <Route path="business/products" element={<ProductsPage />} />
-            
-            {/* 财务管理 */}
-            <Route path="finance/usdt" element={<USDTManagePage />} />
-            <Route path="finance/withdrawal" element={<WithdrawalPage />} />
-            <Route path="finance/reports" element={<FinancialReportPage />} />
-            <Route path="finance/recharge-orders" element={<RechargeOrderManagement />} />
+                          {/* 业务管理 */}
+              <Route path="business/products" element={<ProductsPage />} />
+              <Route path="business/configurable-services" element={<ConfigurableServicesPage />} />
+              
+              {/* 财务管理 */}
+              <Route path="finance/usdt" element={<USDTManagePage />} />
+              <Route path="finance/withdrawal" element={<WithdrawalPage />} />
+              <Route path="finance/reports" element={<FinancialReportPage />} />
+              <Route path="finance/recharge-orders" element={<RechargeOrderManagement />} />
             
             {/* 客服坐席 */}
             <Route path="support/chat" element={<ChatPage />} />

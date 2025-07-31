@@ -62,11 +62,12 @@ const WalletBalance = () => {
         setBalance(userData?.balance || 0);
       }
 
-      // 获取充值统计 - 包括所有状态的充值订单
+      // 获取充值统计 - 只获取钱包充值订单 (order_type = 'wallet')，排除业务充值订单
       const { data: rechargeData, error: rechargeError } = await supabase
         .from('recharge_orders')
-        .select('amount, status, created_at, order_number')
+        .select('amount, status, created_at, order_number, order_type')
         .eq('user_id', userId)
+        .eq('order_type', 'wallet') // 只查询钱包充值订单
         .order('created_at', { ascending: false });
 
       if (rechargeError) {
@@ -82,14 +83,14 @@ const WalletBalance = () => {
         const total = confirmedRecharges.reduce((sum, order) => sum + (order.amount || 0), 0);
         setTotalRecharge(total);
 
-        // 添加充值记录到交易列表
+        // 添加充值记录到交易列表 - 现在只包含钱包充值订单
         const rechargeTransactions: Transaction[] = (rechargeData || []).map(order => ({
           id: order.order_number || `recharge_${Date.now()}`,
           type: 'recharge' as const,
           amount: order.amount || 0,
           status: order.status || 'pending',
           created_at: order.created_at,
-          description: '钱包充值',
+          description: 'USDT钱包充值',
           order_number: order.order_number
         }));
 
@@ -238,7 +239,7 @@ const WalletBalance = () => {
         <CardContent>
           <div className="text-center mb-6">
             <p className="text-sm text-gray-600 mb-2">当前余额</p>
-            <p className="text-4xl font-bold text-blue-600">
+            <p className="text-4xl font-bold text-gray-900">
               {showBalance ? `${balance.toFixed(2)} USDT` : '****'}
             </p>
           </div>

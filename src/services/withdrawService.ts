@@ -185,12 +185,13 @@ export const createWithdrawOrder = async ({ userId, amount, accountId }: Withdra
     // 触发器: sync_withdrawal_to_transaction 会自动处理
     console.log('📊 交易记录将由数据库触发器自动创建');
 
-    // 更新用户余额
+    // 更新用户余额（user_profiles表）
     console.log('💳 更新用户余额...');
+    const newBalance = userBalance - amount;
     const { error: updateError } = await supabase
       .from('user_profiles')
       .update({ 
-        balance: userBalance - amount,
+        balance: newBalance,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', actualUserId);
@@ -207,6 +208,23 @@ export const createWithdrawOrder = async ({ userId, amount, accountId }: Withdra
         
       toast.error(`更新余额失败，提现申请已取消: ${updateError.message}`);
       return false;
+    }
+
+    // 同步更新 users 表余额（如果用户存在于该表中）
+    console.log('💳 同步更新users表余额...');
+    const { error: usersUpdateError } = await supabase
+      .from('users')
+      .update({ 
+        balance: newBalance,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', actualUserId);
+
+    if (usersUpdateError) {
+      console.log('同步更新users表余额失败（用户可能不存在于users表）:', usersUpdateError.message);
+      // 这里不抛出错误，因为用户可能不存在于users表中，这是正常的
+    } else {
+      console.log('✅ 已同步更新users表余额');
     }
 
     console.log('🎉 提现申请提交成功');

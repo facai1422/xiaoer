@@ -28,6 +28,9 @@ import Recharge from "./pages/Recharge";
 import Poster from "./pages/Poster";
 import AgentCenter from "./pages/AgentCenter";
 import Apply from "./pages/agent/Apply";
+import ConfigurableServicePage from "./pages/ConfigurableServicePage";
+import GenericProductPage from "./pages/GenericProductPage";
+import TestPhoneAPI from "./pages/TestPhoneAPI";
 import PaymentSettings from "./pages/PaymentSettings";
 import PaymentOrders from "./pages/PaymentOrders";
 import PayPasswordPage from "./pages/PayPasswordPage";
@@ -74,6 +77,7 @@ import AnYiHua from "./pages/AnYiHua";
 
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { PopupAnnouncement } from "@/components/home/PopupAnnouncement";
+import { orderExpiryService } from "@/services/orderExpiryService";
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -86,8 +90,17 @@ function App() {
     // 初始化弹窗拖拽禁用功能
     const cleanup = initDialogDragDisable();
     
+    // 启动订单过期监控服务（每60秒检查一次）
+    orderExpiryService.startMonitoring(60000);
+    console.log('✅ 订单过期监控服务已启动');
+    
     // 清理函数
-    return cleanup;
+    return () => {
+      cleanup();
+      // 停止监控服务
+      orderExpiryService.stopMonitoring();
+      console.log('🛑 订单过期监控服务已停止');
+    };
   }, []);
 
   // 检查是否应该显示公告弹窗 - 只在用户端页面显示
@@ -161,6 +174,15 @@ function App() {
           <Route path="/jd-ecard" element={<JdEcard />} />
           <Route path="/support" element={<Support />} />
           <Route path="/customer-service" element={<CustomerService />} />
+          
+          {/* 可配置服务路由 */}
+          <Route path="/configurable-service/:slug" element={<ConfigurableServicePage />} />
+          
+          {/* 通用产品页面 */}
+          <Route path="/generic-product/:slug" element={<GenericProductPage />} />
+          
+          {/* 测试页面 */}
+          <Route path="/test-phone-api" element={<TestPhoneAPI />} />
           
           {/* Admin Routes - Use trailing slash to be consistent */}
           <Route path="/admin/*" element={<AdminRoutes />} />

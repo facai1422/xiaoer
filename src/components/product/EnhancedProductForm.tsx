@@ -155,6 +155,7 @@ export const EnhancedProductForm = ({
                     />
                     <button
                       type="button"
+                      title="删除图片"
                       onClick={() => {
                         setFilePreview(prev => {
                           const newPreview = { ...prev };
@@ -294,40 +295,31 @@ export const EnhancedProductForm = ({
         </div>
       )}
 
-      {/* 结算信息 - 重新设计布局 */}
+      {/* 金额计算显示 - 只在有金额输入时显示 */}
       {amount > 0 && (
-        <div className="bg-white border rounded-lg p-4 space-y-3">
-          {/* 充值金额 */}
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">充值金额</span>
-            <span className="font-medium">¥{amount}</span>
+        <div className="space-y-3">
+          {/* 折扣信息 */}
+          <div className="flex justify-between items-center text-sm">
+            <div className="flex items-center">
+              <span className="text-orange-500 bg-orange-50 px-2 py-1 rounded text-xs">折扣</span>
+              <span className="text-gray-500 ml-2">优惠 {discountAmount.toFixed(2)}元</span>
+            </div>
+            <span className="text-gray-500">参考汇率: {exchangeRate}</span>
           </div>
-          
-          {/* 优惠折扣 */}
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">优惠折扣</span>
-            <span className="text-green-600 font-medium">{discount}折</span>
+
+          {/* 总计金额 */}
+          <div className="flex justify-between items-center text-lg font-medium">
+            <span className="text-gray-700">合计支付:</span>
+            <span className="text-orange-500 font-bold">$ {usdtAmount} USDT</span>
           </div>
-          
-          {/* 优惠金额 */}
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">优惠金额</span>
-            <span className="text-green-600 font-medium">¥{discountAmount.toFixed(2)}</span>
-          </div>
-          
-          {/* 参考汇率 */}
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">参考汇率</span>
-            <span className="font-medium">{exchangeRate}</span>
-          </div>
-          
-          {/* 实付金额 */}
-          <div className="flex justify-between items-center text-lg font-semibold border-t pt-3">
-            <span className="text-gray-800">实付金额</span>
-            <span className="text-blue-600">{usdtAmount} USDT</span>
+
+          {/* 当前钱包余额提示 */}
+          <div className="text-xs text-gray-500 text-center bg-blue-50 py-2 px-3 rounded">
+            <span>💳 将从钱包余额扣除 {usdtAmount} USDT</span>
           </div>
         </div>
       )}
+
     </div>
   );
 }; 

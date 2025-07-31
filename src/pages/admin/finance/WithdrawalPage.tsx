@@ -216,7 +216,44 @@ const WithdrawalPage = () => {
       setProcessingIds(prev => new Set(prev).add(id));
       console.log('🔄 开始拒绝提现申请...');
 
-      const { error } = await adminSupabase
+      // 首先获取提现申请详情
+      const { data: withdrawalRequest, error: getError } = await adminSupabase
+        .from('withdrawal_requests')
+        .select('user_id, amount')
+        .eq('id', id)
+        .single();
+
+      if (getError || !withdrawalRequest) {
+        console.error('获取提现申请失败:', getError);
+        throw getError || new Error('提现申请不存在');
+      }
+
+      console.log('📋 提现申请信息:', withdrawalRequest);
+
+      // 获取用户当前余额
+      const { data: userProfile, error: profileError } = await adminSupabase
+        .from('user_profiles')
+        .select('balance')
+        .eq('user_id', withdrawalRequest.user_id)
+        .single();
+
+      if (profileError || !userProfile) {
+        console.error('获取用户余额失败:', profileError);
+        throw profileError || new Error('用户信息不存在');
+      }
+
+      const currentBalance = userProfile.balance || 0;
+      const refundAmount = withdrawalRequest.amount;
+      const newBalance = currentBalance + refundAmount;
+
+      console.log('💰 余额返还信息:', {
+        currentBalance,
+        refundAmount,
+        newBalance
+      });
+
+      // 更新提现申请状态为拒绝
+      const { error: updateError } = await adminSupabase
         .from('withdrawal_requests')
         .update({
           status: 'rejected',
@@ -224,13 +261,68 @@ const WithdrawalPage = () => {
         })
         .eq('id', id);
 
-      if (error) {
-        console.error('更新提现状态失败:', error);
-        throw error;
+      if (updateError) {
+        console.error('更新提现状态失败:', updateError);
+        throw updateError;
       }
 
-      console.log('✅ 提现申请已拒绝');
-      toast.success('提现申请已拒绝');
+      // 返还用户余额（user_profiles表）
+      const { error: balanceError } = await adminSupabase
+        .from('user_profiles')
+        .update({
+          balance: newBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', withdrawalRequest.user_id);
+
+      if (balanceError) {
+        console.error('返还用户余额失败:', balanceError);
+        // 如果余额返还失败，回滚提现申请状态
+        await adminSupabase
+          .from('withdrawal_requests')
+          .update({ status: 'pending' })
+          .eq('id', id);
+        throw balanceError;
+      }
+
+      // 同步更新 users 表余额（如果用户存在于该表中）
+      const { error: usersBalanceError } = await adminSupabase
+        .from('users')
+        .update({
+          balance: newBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', withdrawalRequest.user_id);
+
+      if (usersBalanceError) {
+        console.log('同步更新users表余额失败（用户可能不存在于users表）:', usersBalanceError.message);
+        // 这里不抛出错误，因为用户可能不存在于users表中，这是正常的
+      } else {
+        console.log('✅ 已同步更新users表余额');
+      }
+
+      // 创建返还交易记录
+      const { error: transactionError } = await adminSupabase
+        .from('user_transactions')
+        .insert({
+          user_id: withdrawalRequest.user_id,
+          type: 'refund',
+          amount: refundAmount,
+          status: 'completed',
+          description: `提现申请被拒绝，余额返还 - ${refundAmount} USDT`,
+          reference_id: id,
+          balance: newBalance,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (transactionError) {
+        console.error('创建返还交易记录失败:', transactionError);
+        // 这里不抛出错误，因为主要操作已成功，只是记录失败
+      }
+
+      console.log('✅ 提现申请已拒绝，余额已返还');
+      toast.success(`提现申请已拒绝，${refundAmount} USDT 已返还到用户余额`);
       fetchWithdrawals();
       setShowDetailDialog(false);
     } catch (error) {
