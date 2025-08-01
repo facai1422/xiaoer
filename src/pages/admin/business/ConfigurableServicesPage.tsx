@@ -629,9 +629,12 @@ const ConfigurableServicesPage = () => {
                       <div className="flex items-end space-x-2">
                         <div className="flex items-center space-x-2">
                           <input
+                            id={`required-checkbox-${field.id}`}
                             type="checkbox"
                             checked={field.required}
                             onChange={(e) => handleUpdateFormField(index, { ...field, required: e.target.checked })}
+                            title="是否必填"
+                            aria-label="是否必填"
                           />
                           <Label className="text-sm">必填</Label>
                         </div>

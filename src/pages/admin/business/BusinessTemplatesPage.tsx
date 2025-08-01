@@ -425,12 +425,17 @@ const BusinessTemplatesPage = () => {
                   </div>
                   <div className="space-y-2">
                     <div>
+                      <Label htmlFor="logo-upload" className="sr-only">
+                        上传LOGO图片（支持PNG/JPG/GIF，或输入Emoji）
+                      </Label>
                       <input
+                        id="logo-upload"
                         type="file"
                         accept="image/*"
                         onChange={handleLogoUpload}
+                        title="上传LOGO图片，支持PNG/JPG/GIF"
+                        placeholder="请选择LOGO图片"
                         className="hidden"
-                        id="logo-upload"
                       />
                       <Button
                         variant="outline"

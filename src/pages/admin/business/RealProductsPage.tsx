@@ -690,11 +690,13 @@ const RealProductsPage: React.FC = () => {
             </div>
 
             <div style={styles.formGroup}>
-              <label style={styles.label}>产品分类</label>
+              <label style={styles.label} htmlFor="product-category-select">产品分类</label>
               <select
+                id="product-category-select"
                 style={styles.select}
                 value={formData.category}
                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                aria-label="产品分类"
               >
                 <option value="代还服务">代还服务</option>
                 <option value="充值服务">充值服务</option>
@@ -790,23 +792,31 @@ const RealProductsPage: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={styles.formGroup}>
-                <label style={styles.label}>最小金额</label>
+                <label style={styles.label} htmlFor="min-amount-input">最小金额</label>
                 <input
+                  id="min-amount-input"
                   style={styles.input}
                   type="number"
                   min="1"
                   value={formData.min_amount}
+                  placeholder="100"
+                  title="请输入最小金额"
+                  aria-label="最小金额"
                   onChange={(e) => setFormData(prev => ({ ...prev, min_amount: parseInt(e.target.value) || 100 }))}
                 />
               </div>
 
               <div style={styles.formGroup}>
-                <label style={styles.label}>最大金额</label>
+                <label style={styles.label} htmlFor="max-amount-input">最大金额</label>
                 <input
+                  id="max-amount-input"
                   style={styles.input}
                   type="number"
                   min="1"
                   value={formData.max_amount}
+                  placeholder="50000"
+                  title="请输入最大金额"
+                  aria-label="最大金额"
                   onChange={(e) => setFormData(prev => ({ ...prev, max_amount: parseInt(e.target.value) || 50000 }))}
                 />
               </div>
@@ -825,10 +835,13 @@ const RealProductsPage: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={styles.formGroup}>
-                <label style={styles.label}>状态</label>
+                <label style={styles.label} htmlFor="status-select">状态</label>
                 <select
+                  id="status-select"
                   style={styles.select}
                   value={formData.status}
+                  title="请选择状态"
+                  aria-label="状态"
                   onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' | 'maintenance' }))}
                 >
                   <option value="active">启用</option>
@@ -838,12 +851,16 @@ const RealProductsPage: React.FC = () => {
               </div>
 
               <div style={styles.formGroup}>
-                <label style={styles.label}>排序顺序</label>
+                <label style={styles.label} htmlFor="sort-order-input">排序顺序</label>
                 <input
+                  id="sort-order-input"
                   style={styles.input}
                   type="number"
                   min="0"
                   value={formData.sort_order}
+                  placeholder="0"
+                  title="请输入排序顺序"
+                  aria-label="排序顺序"
                   onChange={(e) => setFormData(prev => ({ ...prev, sort_order: parseInt(e.target.value) || 0 }))}
                 />
               </div>
@@ -907,8 +924,10 @@ const RealProductsPage: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label style={{ ...styles.label, fontSize: '12px' }}>字段类型</label>
+                        <label htmlFor={`field-type-${field.id}`} style={{ ...styles.label, fontSize: '12px' }}>字段类型</label>
                         <select
+                          id={`field-type-${field.id}`}
+                          aria-label="字段类型"
                           style={{ ...styles.select, marginBottom: '0', fontSize: '12px', padding: '6px 8px' }}
                           value={field.type}
                           onChange={(e) => {
