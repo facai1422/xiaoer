@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Settings, Calculator, Package } from 'lucide-react';
+import { Plus, Edit, Trash2, Settings, Calculator, Package, X } from 'lucide-react';
 import { 
   getExchangeRateSettings,
   getDiscountSettings,
@@ -41,6 +41,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import { getAdminSession } from "@/utils/adminAuth";
 import { TutorialEditor } from "@/components/admin/TutorialEditor";
+import { BusinessTemplate, defaultBusinessTemplates } from "@/config/businessTemplates";
 import {
   Search,
   RefreshCw,
@@ -120,7 +121,12 @@ const NewProductsPage = () => {
     template_id: '',
     tutorialText: '查看使用教程 →',
     showTutorial: true,
+    form_config: [] as any[],
   });
+
+  // 业务模板相关状态
+  const [selectedTemplate, setSelectedTemplate] = useState<BusinessTemplate | null>(null);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   
   // 快捷金额编辑状态
   const [quickAmountInput, setQuickAmountInput] = useState('');
@@ -236,6 +242,7 @@ const NewProductsPage = () => {
           quick_amounts: productForm.quick_amounts,
           sort_order: productForm.sort_order,
           template_id: productForm.template_id,
+          form_config: productForm.form_config,
           custom_config: {
             tutorialText: productForm.tutorialText,
             showTutorial: productForm.showTutorial,
@@ -278,6 +285,7 @@ const NewProductsPage = () => {
           quick_amounts: productForm.quick_amounts,
           sort_order: productForm.sort_order,
           template_id: productForm.template_id,
+          form_config: productForm.form_config,
           custom_config: {
             tutorialText: productForm.tutorialText,
             showTutorial: productForm.showTutorial,
@@ -341,6 +349,7 @@ const NewProductsPage = () => {
       template_id: '',
       tutorialText: '查看使用教程 →',
       showTutorial: true,
+      form_config: [],
     });
     setQuickAmountInput('500,1000,2000,5000');
     setTutorialContent({
@@ -369,6 +378,7 @@ const NewProductsPage = () => {
       template_id: product.template_id || '',
       tutorialText: product.custom_config?.tutorialText || '查看使用教程 →',
       showTutorial: product.custom_config?.showTutorial !== false,
+      form_config: product.form_config || [],
     });
     setQuickAmountInput(product.quick_amounts.join(','));
     setTutorialContent(product.custom_config?.tutorialContent || {
@@ -376,6 +386,56 @@ const NewProductsPage = () => {
       steps: []
     });
     setProductDialog(true);
+  };
+
+  // 模板处理函数
+  const handleSelectTemplate = (template: BusinessTemplate) => {
+    setSelectedTemplate(template);
+    
+    // 转换模板字段到表单配置
+    const formConfig = template.formFields
+      .filter(field => field.isEnabled)
+      .sort((a, b) => a.order - b.order)
+      .map(field => ({
+        id: field.id,
+        name: field.name,
+        label: field.label,
+        type: field.type,
+        placeholder: field.placeholder,
+        required: field.required,
+        order: field.order,
+        options: field.options,
+        validation: field.validation
+      }));
+
+    // 填充产品表单
+    setProductForm(prev => ({
+      ...prev,
+      name: template.displayName,
+      slug: template.name,
+      category: template.category,
+      description: template.description,
+      logo_url: template.logo || '',
+      template_id: template.id,
+      custom_exchange_rate: template.settings.exchangeRate,
+      custom_discount_rate: template.settings.discountRate,
+      min_amount: template.settings.minAmount,
+      max_amount: template.settings.maxAmount,
+      quick_amounts: template.settings.quickAmounts,
+      form_config: formConfig
+    }));
+
+    setQuickAmountInput(template.settings.quickAmounts.join(','));
+    setShowTemplateModal(false);
+  };
+
+  const resetTemplateSelection = () => {
+    setSelectedTemplate(null);
+    setProductForm(prev => ({
+      ...prev,
+      template_id: '',
+      form_config: []
+    }));
   };
 
   const generateSlug = (name: string) => {
@@ -432,16 +492,26 @@ const NewProductsPage = () => {
           <Package className="h-6 w-6" />
           <h1 className="text-2xl font-semibold">业务产品管理（自定义汇率/折扣）</h1>
         </div>
+        <div className="flex space-x-2">
+          <Button onClick={() => {
+            setEditingProduct(null);
+            resetProductForm();
+            setShowTemplateModal(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            从模板添加产品
+          </Button>
+          <Button variant="outline" onClick={() => {
+            setEditingProduct(null);
+            resetProductForm();
+            setProductDialog(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            手动添加产品
+          </Button>
+        </div>
+
         <Dialog open={productDialog} onOpenChange={setProductDialog}>
-          <DialogTrigger asChild>
-            <Button onClick={() => {
-              setEditingProduct(null);
-              resetProductForm();
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              添加产品
-            </Button>
-          </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -513,6 +583,50 @@ const NewProductsPage = () => {
                     placeholder="产品详细描述"
                   />
                 </div>
+              </div>
+
+              {/* 自定义表单字段配置 */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-gray-900 flex items-center">
+                    <Settings className="h-4 w-4 mr-2" />
+                    自定义表单字段配置
+                  </h4>
+                  {selectedTemplate && (
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline">模板：{selectedTemplate.displayName}</Badge>
+                      <Button variant="ghost" size="sm" onClick={resetTemplateSelection}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {productForm.form_config.length > 0 ? (
+                  <div className="space-y-3">
+                    {productForm.form_config.map((field: any, index: number) => (
+                      <div key={field.id || index} className="border rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">{field.label}</span>
+                          <Badge variant="secondary">{field.type}</Badge>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <p>字段名：{field.name}</p>
+                          <p>占位符：{field.placeholder}</p>
+                          <p>必填：{field.required ? '是' : '否'}</p>
+                          {field.options && (
+                            <p>选项：{field.options.join(', ')}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <p className="text-gray-500">暂无自定义表单字段</p>
+                    <p className="text-sm text-gray-400 mt-1">使用"从模板添加产品"来快速配置表单字段</p>
+                  </div>
+                )}
               </div>
 
               {/* 汇率和折扣配置 */}
@@ -811,6 +925,47 @@ const NewProductsPage = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* 模板选择对话框 */}
+      <Dialog open={showTemplateModal} onOpenChange={setShowTemplateModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>选择业务模板</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {defaultBusinessTemplates.filter(template => template.isActive).map((template) => (
+              <Card 
+                key={template.id} 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleSelectTemplate(template)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl">{template.defaultLogo}</div>
+                    <div>
+                      <CardTitle className="text-lg">{template.displayName}</CardTitle>
+                      <p className="text-sm text-gray-500">{template.category}</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+                  <div className="space-y-1 text-xs text-gray-500">
+                    <p>汇率: {template.settings.exchangeRate}</p>
+                    <p>折扣: {(template.settings.discountRate * 10).toFixed(1)}折</p>
+                    <p>表单字段: {template.formFields.filter(f => f.isEnabled).length}个</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTemplateModal(false)}>
+              取消
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

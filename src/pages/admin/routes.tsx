@@ -23,6 +23,7 @@ import UsersPage from "@/modules/admin/pages/UsersPage"
 // 业务管理
 import ProductsPage from "./business/RealProductsPage"
 import ConfigurableServicesPage from "./business/ConfigurableServicesPage"
+import BusinessTemplatesPage from "./business/BusinessTemplatesPage"
 
 // 财务管理
 import USDTManagePage from "./finance/USDTManagePage"
@@ -105,6 +106,7 @@ const AdminRoutes = () => {
             
                           {/* 业务管理 */}
               <Route path="business/products" element={<ProductsPage />} />
+              <Route path="business/templates" element={<BusinessTemplatesPage />} />
               <Route path="business/configurable-services" element={<ConfigurableServicesPage />} />
               
               {/* 财务管理 */}

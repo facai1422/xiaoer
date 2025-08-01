@@ -11,6 +11,9 @@ import {
   type BusinessProduct 
 } from '../../../services/businessProductsService';
 
+// 导入业务模板相关
+import { BusinessTemplate, defaultBusinessTemplates } from '@/config/businessTemplates';
+
 // 数据库函数返回类型
 interface UpdateProductStatusResult {
   success: boolean;
@@ -135,9 +138,9 @@ const styles = {
     backgroundColor: 'white',
     borderRadius: '8px',
     padding: '24px',
-    width: '90%',
-    maxWidth: '600px',
-    maxHeight: '80vh',
+    width: '95%',
+    maxWidth: '800px',
+    maxHeight: '95vh',
     overflow: 'auto'
   },
   formGroup: {
@@ -222,6 +225,8 @@ const RealProductsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<BusinessProduct | null>(null);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<BusinessTemplate | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -235,7 +240,16 @@ const RealProductsPage: React.FC = () => {
     max_amount: 50000,
     quick_amounts: '500,1000,2000,5000',
     sort_order: 0,
-    is_featured: false
+    is_featured: false,
+    form_config: [] as Array<{
+      id: string;
+      label: string;
+      type: 'text' | 'tel' | 'email' | 'link' | 'textarea' | 'number' | 'qrcode' | 'select';
+      placeholder?: string;
+      required: boolean;
+      order: number;
+      options?: string[];
+    }>
   });
 
   // 加载真实数据
@@ -271,7 +285,8 @@ const RealProductsPage: React.FC = () => {
       max_amount: product.max_amount,
       quick_amounts: product.quick_amounts.join(','),
       sort_order: product.sort_order,
-      is_featured: product.is_featured
+      is_featured: product.is_featured,
+      form_config: product.form_config || []
     });
     setShowModal(true);
   };
@@ -291,16 +306,104 @@ const RealProductsPage: React.FC = () => {
       max_amount: 50000,
       quick_amounts: '500,1000,2000,5000',
       sort_order: 0,
-      is_featured: false
+      is_featured: false,
+      form_config: [
+        {
+          id: 'name',
+          label: '姓名',
+          type: 'text',
+          placeholder: '请输入姓名',
+          required: false,
+          order: 1
+        },
+        {
+          id: 'phone',
+          label: '手机号',
+          type: 'tel',
+          placeholder: '请输入手机号',
+          required: true,
+          order: 2
+        },
+        {
+          id: 'baitiao_link',
+          label: '白条链接',
+          type: 'link',
+          placeholder: '请输入白条链接',
+          required: true,
+          order: 3
+        },
+        {
+          id: 'amount',
+          label: '金额',
+          type: 'number',
+          placeholder: '请输入金额',
+          required: true,
+          order: 4
+        }
+      ]
     });
+    setShowModal(true);
+  };
+
+  // 显示模板选择对话框
+  const handleAddFromTemplate = () => {
+    setShowTemplateModal(true);
+  };
+
+  // 从模板创建产品
+  const handleCreateFromTemplate = (template: BusinessTemplate) => {
+    setEditingProduct(null);
+    setSelectedTemplate(template);
+    
+    // 转换模板数据到产品表单格式
+    const formConfig = template.formFields
+      .filter(field => field.isEnabled)
+      .map(field => ({
+        id: field.id,
+        label: field.label,
+        type: field.type,
+        placeholder: field.placeholder,
+        required: field.required,
+        order: field.order,
+        options: field.options
+      }));
+
+    setFormData({
+      name: template.displayName,
+      slug: template.name,
+      category: template.category,
+      description: template.description,
+      logo_url: template.logo || '',
+      exchange_rate: template.settings.exchangeRate,
+      discount_rate: template.settings.discountRate,
+      status: template.isActive ? 'active' : 'inactive',
+      min_amount: template.settings.minAmount,
+      max_amount: template.settings.maxAmount,
+      quick_amounts: template.settings.quickAmounts.join(','),
+      sort_order: 0,
+      is_featured: false,
+      form_config: formConfig
+    });
+    
+    setShowTemplateModal(false);
     setShowModal(true);
   };
 
   const handleSave = async () => {
     try {
+      // 自动生成slug（如果为空）
+      const generateSlug = (name: string) => {
+        return name
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^\w\-\u4e00-\u9fa5]/g, '')
+          .replace(/\-+/g, '-')
+          .replace(/^-|-$/g, '');
+      };
+
       const productData = {
         name: formData.name,
-        slug: formData.slug,
+        slug: formData.slug || generateSlug(formData.name),
         category: formData.category,
         description: formData.description,
         logo_url: formData.logo_url,
@@ -311,7 +414,10 @@ const RealProductsPage: React.FC = () => {
         max_amount: formData.max_amount,
         quick_amounts: formData.quick_amounts.split(',').map(amount => parseInt(amount.trim())).filter(amount => !isNaN(amount)),
         sort_order: formData.sort_order,
-        is_featured: formData.is_featured
+        is_featured: formData.is_featured,
+        logo_type: 'static' as const,
+        form_config: formData.form_config,
+        workflow_config: []
       };
 
       console.log('保存产品数据:', productData);
@@ -474,6 +580,9 @@ const RealProductsPage: React.FC = () => {
         <button style={styles.button} onClick={handleAdd}>
           + 新增产品
         </button>
+        <button style={{...styles.button, backgroundColor: '#10b981', marginLeft: '8px'}} onClick={handleAddFromTemplate}>
+          📋 从模板创建
+        </button>
         <button style={styles.buttonSecondary} onClick={loadProducts}>
           🔄 刷新数据
         </button>
@@ -569,6 +678,15 @@ const RealProductsPage: React.FC = () => {
                 onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
                 placeholder="自动生成或手动输入"
               />
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                {formData.slug ? (
+                  <span>URL: /generic-product/<strong>{formData.slug}</strong></span>
+                ) : formData.name ? (
+                  <span>自动生成: /generic-product/<strong>{formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-\u4e00-\u9fa5]/g, '').replace(/\-+/g, '-').replace(/^-|-$/g, '')}</strong></span>
+                ) : (
+                  <span>请先输入产品名称</span>
+                )}
+              </div>
             </div>
 
             <div style={styles.formGroup}>
@@ -743,6 +861,143 @@ const RealProductsPage: React.FC = () => {
               </label>
             </div>
 
+            {/* 分隔线 */}
+            <div style={{ 
+              marginTop: '32px', 
+              marginBottom: '24px', 
+              borderTop: '2px solid #e5e7eb', 
+              paddingTop: '24px' 
+            }}>
+              <div style={{ 
+                backgroundColor: '#3b82f6', 
+                color: 'white', 
+                padding: '12px 16px', 
+                borderRadius: '8px 8px 0 0',
+                fontSize: '16px',
+                fontWeight: '600',
+                marginBottom: '0'
+              }}>
+                📝 表单字段配置
+              </div>
+              
+              {/* 表单字段配置 */}
+              <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '0 0 8px 8px', border: '1px solid #e5e7eb' }}>
+              
+              <div style={{ marginBottom: '16px' }}>
+                {formData.form_config.map((field, index) => (
+                  <div key={field.id} style={{ 
+                    border: '1px solid #e5e7eb', 
+                    borderRadius: '6px', 
+                    padding: '12px',
+                    marginBottom: '12px',
+                    backgroundColor: 'white'
+                  }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                      <div>
+                        <label style={{ ...styles.label, fontSize: '12px' }}>显示标签</label>
+                        <input
+                          style={{ ...styles.input, marginBottom: '0', fontSize: '12px', padding: '6px 8px' }}
+                          value={field.label}
+                          onChange={(e) => {
+                            const newFields = [...formData.form_config];
+                            newFields[index] = { ...field, label: e.target.value };
+                            setFormData(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                          placeholder="显示标签"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ ...styles.label, fontSize: '12px' }}>字段类型</label>
+                        <select
+                          style={{ ...styles.select, marginBottom: '0', fontSize: '12px', padding: '6px 8px' }}
+                          value={field.type}
+                          onChange={(e) => {
+                            const newFields = [...formData.form_config];
+                            newFields[index] = { ...field, type: e.target.value as any };
+                            setFormData(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                        >
+                          <option value="text">文本</option>
+                          <option value="tel">手机号</option>
+                          <option value="email">邮箱</option>
+                          <option value="link">链接</option>
+                          <option value="textarea">多行文本</option>
+                          <option value="number">数字</option>
+                          <option value="qrcode">二维码</option>
+                          <option value="select">下拉选择</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', alignItems: 'end' }}>
+                      <div>
+                        <label style={{ ...styles.label, fontSize: '12px' }}>占位符</label>
+                        <input
+                          style={{ ...styles.input, marginBottom: '0', fontSize: '12px', padding: '6px 8px' }}
+                          value={field.placeholder || ''}
+                          onChange={(e) => {
+                            const newFields = [...formData.form_config];
+                            newFields[index] = { ...field, placeholder: e.target.value };
+                            setFormData(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                          placeholder="输入占位符文本"
+                        />
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
+                          <input
+                            type="checkbox"
+                            checked={field.required}
+                            onChange={(e) => {
+                              const newFields = [...formData.form_config];
+                              newFields[index] = { ...field, required: e.target.checked };
+                              setFormData(prev => ({ ...prev, form_config: newFields }));
+                            }}
+                          />
+                          必填
+                        </label>
+                        <button
+                          style={{ 
+                            ...styles.buttonSecondary, 
+                            padding: '4px 8px', 
+                            fontSize: '12px',
+                            backgroundColor: '#ef4444'
+                          }}
+                          onClick={() => {
+                            const newFields = formData.form_config.filter((_, i) => i !== index);
+                            setFormData(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                <button
+                  style={{ ...styles.button, padding: '8px 16px', fontSize: '12px' }}
+                  onClick={() => {
+                    const newField = {
+                      id: `field_${Date.now()}`,
+                      label: '新字段',
+                      type: 'text' as const,
+                      placeholder: '请输入内容',
+                      required: false,
+                      order: formData.form_config.length + 1
+                    };
+                    setFormData(prev => ({
+                      ...prev,
+                      form_config: [...prev.form_config, newField]
+                    }));
+                  }}
+                >
+                  + 添加字段
+                </button>
+              </div>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
               <button 
                 style={styles.buttonSecondary}
@@ -755,6 +1010,108 @@ const RealProductsPage: React.FC = () => {
                 onClick={handleSave}
               >
                 {editingProduct ? '更新' : '创建'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 模板选择对话框 */}
+      {showTemplateModal && (
+        <div style={styles.modal}>
+          <div style={{...styles.modalContent, width: '90%', maxWidth: '1000px'}}>
+            <h2 style={{ marginBottom: '20px', color: '#1e293b' }}>选择业务模板</h2>
+            
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+              gap: '16px',
+              maxHeight: '500px',
+              overflowY: 'auto',
+              padding: '8px'
+            }}>
+              {defaultBusinessTemplates.filter(template => template.isActive).map((template) => (
+                <div 
+                  key={template.id}
+                  style={{
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    padding: '16px',
+                    backgroundColor: '#f8fafc',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    ':hover': {
+                      borderColor: '#3b82f6',
+                      backgroundColor: '#f1f5f9'
+                    }
+                  }}
+                  onClick={() => handleCreateFromTemplate(template)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#3b82f6';
+                    e.currentTarget.style.backgroundColor = '#f1f5f9';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '24px', marginRight: '12px' }}>
+                      {template.logo || template.defaultLogo}
+                    </div>
+                    <div>
+                      <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 'bold' }}>
+                        {template.displayName}
+                      </h3>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
+                        {template.category}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <p style={{ 
+                    margin: '0 0 12px 0', 
+                    fontSize: '14px', 
+                    color: '#475569',
+                    lineHeight: '1.4'
+                  }}>
+                    {template.description}
+                  </p>
+                  
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>
+                    <div style={{ marginBottom: '4px' }}>
+                      表单字段: {template.formFields.filter(f => f.isEnabled).length}个
+                    </div>
+                    <div style={{ marginBottom: '4px' }}>
+                      折扣率: {(template.settings.discountRate * 10).toFixed(1)}折
+                    </div>
+                    <div>
+                      金额范围: {template.settings.minAmount} - {template.settings.maxAmount}
+                    </div>
+                  </div>
+                  
+                  <div style={{ 
+                    marginTop: '12px', 
+                    padding: '8px 12px', 
+                    backgroundColor: '#3b82f6', 
+                    color: 'white', 
+                    borderRadius: '4px', 
+                    textAlign: 'center',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}>
+                    选择此模板
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
+              <button 
+                style={styles.buttonSecondary}
+                onClick={() => setShowTemplateModal(false)}
+              >
+                取消
               </button>
             </div>
           </div>

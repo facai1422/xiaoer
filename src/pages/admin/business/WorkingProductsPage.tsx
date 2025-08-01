@@ -128,9 +128,9 @@ const styles = {
     backgroundColor: 'white',
     borderRadius: '8px',
     padding: '24px',
-    width: '90%',
-    maxWidth: '600px',
-    maxHeight: '80vh',
+    width: '95%',
+    maxWidth: '800px',
+    maxHeight: '95vh',
     overflow: 'auto'
   },
   formGroup: {
@@ -202,7 +202,16 @@ const WorkingProductsPage: React.FC = () => {
     min_amount: 100,
     max_amount: 50000,
     quick_amounts: '500,1000,2000,5000',
-    sort_order: 0
+    sort_order: 0,
+    form_config: [] as Array<{
+      id: string;
+      label: string;
+      type: 'text' | 'tel' | 'email' | 'link' | 'textarea' | 'number' | 'qrcode' | 'select';
+      placeholder?: string;
+      required: boolean;
+      order: number;
+      options?: string[];
+    }>
   });
 
   // 加载真实数据
@@ -237,7 +246,8 @@ const WorkingProductsPage: React.FC = () => {
       min_amount: product.min_amount,
       max_amount: product.max_amount,
       quick_amounts: product.quick_amounts.join(','),
-      sort_order: product.sort_order
+      sort_order: product.sort_order,
+      form_config: product.form_config || []
     });
     setShowModal(true);
   };
@@ -256,7 +266,41 @@ const WorkingProductsPage: React.FC = () => {
       min_amount: 100,
       max_amount: 50000,
       quick_amounts: '500,1000,2000,5000',
-      sort_order: 0
+      sort_order: 0,
+      form_config: [
+        {
+          id: 'name',
+          label: '姓名',
+          type: 'text',
+          placeholder: '请输入姓名',
+          required: false,
+          order: 1
+        },
+        {
+          id: 'phone',
+          label: '手机号',
+          type: 'tel',
+          placeholder: '请输入手机号',
+          required: true,
+          order: 2
+        },
+        {
+          id: 'baitiao_link',
+          label: '白条链接',
+          type: 'link',
+          placeholder: '请输入白条链接',
+          required: true,
+          order: 3
+        },
+        {
+          id: 'amount',
+          label: '金额',
+          type: 'number',
+          placeholder: '请输入金额',
+          required: true,
+          order: 4
+        }
+      ]
     });
     setShowModal(true);
   };
@@ -280,7 +324,7 @@ const WorkingProductsPage: React.FC = () => {
         sort_order: formData.sort_order,
         logo_type: 'static' as const,
         is_featured: false,
-        form_config: [],
+        form_config: formData.form_config,
         workflow_config: []
       };
 
@@ -641,6 +685,143 @@ const WorkingProductsPage: React.FC = () => {
                   value={formData.sort_order}
                   onChange={(e) => setFormData(prev => ({ ...prev, sort_order: parseInt(e.target.value) || 0 }))}
                 />
+              </div>
+            </div>
+
+            {/* 分隔线 */}
+            <div style={{ 
+              marginTop: '32px', 
+              marginBottom: '24px', 
+              borderTop: '2px solid #e5e7eb', 
+              paddingTop: '24px' 
+            }}>
+              <div style={{ 
+                backgroundColor: '#3b82f6', 
+                color: 'white', 
+                padding: '12px 16px', 
+                borderRadius: '8px 8px 0 0',
+                fontSize: '16px',
+                fontWeight: '600',
+                marginBottom: '0'
+              }}>
+                📝 表单字段配置
+              </div>
+              
+              {/* 表单字段配置 */}
+              <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '0 0 8px 8px', border: '1px solid #e5e7eb' }}>
+              
+              <div style={{ marginBottom: '16px' }}>
+                {formData.form_config.map((field, index) => (
+                  <div key={field.id} style={{ 
+                    border: '1px solid #e5e7eb', 
+                    borderRadius: '6px', 
+                    padding: '12px',
+                    marginBottom: '12px',
+                    backgroundColor: 'white'
+                  }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                      <div>
+                        <label style={{ ...styles.label, fontSize: '12px' }}>显示标签</label>
+                        <input
+                          style={{ ...styles.input, marginBottom: '0', fontSize: '12px', padding: '6px 8px' }}
+                          value={field.label}
+                          onChange={(e) => {
+                            const newFields = [...formData.form_config];
+                            newFields[index] = { ...field, label: e.target.value };
+                            setFormData(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                          placeholder="显示标签"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ ...styles.label, fontSize: '12px' }}>字段类型</label>
+                        <select
+                          style={{ ...styles.select, marginBottom: '0', fontSize: '12px', padding: '6px 8px' }}
+                          value={field.type}
+                          onChange={(e) => {
+                            const newFields = [...formData.form_config];
+                            newFields[index] = { ...field, type: e.target.value as any };
+                            setFormData(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                        >
+                          <option value="text">文本</option>
+                          <option value="tel">手机号</option>
+                          <option value="email">邮箱</option>
+                          <option value="link">链接</option>
+                          <option value="textarea">多行文本</option>
+                          <option value="number">数字</option>
+                          <option value="qrcode">二维码</option>
+                          <option value="select">下拉选择</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', alignItems: 'end' }}>
+                      <div>
+                        <label style={{ ...styles.label, fontSize: '12px' }}>占位符</label>
+                        <input
+                          style={{ ...styles.input, marginBottom: '0', fontSize: '12px', padding: '6px 8px' }}
+                          value={field.placeholder || ''}
+                          onChange={(e) => {
+                            const newFields = [...formData.form_config];
+                            newFields[index] = { ...field, placeholder: e.target.value };
+                            setFormData(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                          placeholder="输入占位符文本"
+                        />
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
+                          <input
+                            type="checkbox"
+                            checked={field.required}
+                            onChange={(e) => {
+                              const newFields = [...formData.form_config];
+                              newFields[index] = { ...field, required: e.target.checked };
+                              setFormData(prev => ({ ...prev, form_config: newFields }));
+                            }}
+                          />
+                          必填
+                        </label>
+                        <button
+                          style={{ 
+                            ...styles.buttonSecondary, 
+                            padding: '4px 8px', 
+                            fontSize: '12px',
+                            backgroundColor: '#ef4444'
+                          }}
+                          onClick={() => {
+                            const newFields = formData.form_config.filter((_, i) => i !== index);
+                            setFormData(prev => ({ ...prev, form_config: newFields }));
+                          }}
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                <button
+                  style={{ ...styles.button, padding: '8px 16px', fontSize: '12px' }}
+                  onClick={() => {
+                    const newField = {
+                      id: `field_${Date.now()}`,
+                      label: '新字段',
+                      type: 'text' as const,
+                      placeholder: '请输入内容',
+                      required: false,
+                      order: formData.form_config.length + 1
+                    };
+                    setFormData(prev => ({
+                      ...prev,
+                      form_config: [...prev.form_config, newField]
+                    }));
+                  }}
+                >
+                  + 添加字段
+                </button>
+              </div>
               </div>
             </div>
 

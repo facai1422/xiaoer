@@ -15,7 +15,9 @@ const JdEcard = () => {
   const [formData, setFormData] = useState({
     amount: "",
     email: "",
-    phone: ""
+    phone: "",
+    name: "",
+    baitiaoLink: ""
   });
 
   // 使用动态产品配置
@@ -53,8 +55,8 @@ const JdEcard = () => {
       return;
     }
     
-    if (!formData.email) {
-      toast.error("请输入接收邮箱");
+    if (!formData.baitiaoLink.trim()) {
+      toast.error("请输入白条链接");
       return;
     }
     
@@ -71,22 +73,24 @@ const JdEcard = () => {
       
       const order = await createBusinessOrder({
         userId: user.id,
-        businessType: "京东E卡",
-        targetAccount: formData.email,
+        businessType: "京东白条",
+        targetAccount: formData.email || formData.phone,
         amount: amountCNY,
         actualAmount: actualAmountUSDT,
-        accountName: formData.email,
+        accountName: formData.name || "未填写",
         metadata: {
-          email: formData.email,
+          name: formData.name,
+          account: formData.email,
           phone: formData.phone,
+          baitiao_link: formData.baitiaoLink,
           amount: formData.amount,
           exchange_rate: config.exchangeRate
         }
       });
       
       if (order) {
-        setFormData({ amount: "", email: "", phone: "" });
-        toast.success(config.successMessage);
+        setFormData({ amount: "", email: "", phone: "", name: "", baitiaoLink: "" });
+        toast.success("京东白条订单提交成功！");
         navigate("/orders");
       }
     } catch (error) {
@@ -99,13 +103,31 @@ const JdEcard = () => {
 
   const formFields: FormField[] = [
     {
-      name: "email",
-      label: "接收邮箱",
+      name: "name",
+      label: "姓名",
       type: "text",
-      placeholder: "请输入接收E卡的邮箱地址",
-      required: true,
+      placeholder: "请输入姓名（选填）",
+      required: false,
+      value: formData.name,
+      onChange: (value) => handleFieldChange("name", value)
+    },
+    {
+      name: "email",
+      label: "账号",
+      type: "text",
+      placeholder: "请输入账号（选填）",
+      required: false,
       value: formData.email,
       onChange: (value) => handleFieldChange("email", value)
+    },
+    {
+      name: "baitiaoLink",
+      label: "白条链接",
+      type: "text",
+      placeholder: "请输入白条链接",
+      required: true,
+      value: formData.baitiaoLink,
+      onChange: (value) => handleFieldChange("baitiaoLink", value)
     },
     {
       name: "phone",

@@ -8,7 +8,8 @@ import {
   Smartphone,
   CreditCard,
   Wallet2,
-  Bell
+  Bell,
+  Package
 } from "lucide-react";
 import { MenuItem } from "./types";
 
@@ -79,6 +80,24 @@ export const menuItems: MenuItem[] = [
       {
         title: "系统通知",
         path: "/admin/notices"
+      }
+    ]
+  },
+  {
+    title: "业务管理",
+    icon: Package,
+    children: [
+      {
+        title: "产品管理",
+        path: "/admin/business/products"
+      },
+      {
+        title: "业务模板",
+        path: "/admin/business/templates"
+      },
+      {
+        title: "可配置服务",
+        path: "/admin/business/configurable-services"
       }
     ]
   },

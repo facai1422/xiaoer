@@ -573,9 +573,7 @@ const Dashboard = () => {
         'dianfei-payment': '/electric-recharge',
         'electricity-bill': '/electric-recharge',
         
-        // 京东E卡 - 独立路由
-        'jd-ecard': '/jd-ecard',
-        'jd-card': '/jd-ecard',
+        // 京东E卡 - 独立路由（只保留精确匹配）
         'jingdong-ecard': '/jd-ecard',
         
         // 新增的金融业务路由
@@ -589,6 +587,13 @@ const Dashboard = () => {
         'utility-payment': '/gas-fee'
       };
 
+      // 优先处理京东白条，避免被其他规则误匹配
+      if (product.name.includes('京东白条') || product.slug.includes('baitiao')) {
+        const finalRoute = `/generic-product/${product.slug}`;
+        navigate(finalRoute, { state: { productConfig: product } });
+        return;
+      }
+
       const route = routeMap[product.slug] || `/${product.slug}`;
       
       // 智能路由fallback - 根据产品名称推断路由
@@ -596,7 +601,7 @@ const Dashboard = () => {
       if (route === `/${product.slug}`) {
         if (product.name.includes('石化') || product.name.includes('加油')) {
           finalRoute = '/oil-card';
-        } else if (product.name.includes('京东') || product.name.includes('E卡')) {
+        } else if (product.name.includes('京东E卡') || product.name.includes('E卡')) {
           finalRoute = '/jd-ecard';
         } else if (product.name.includes('信用卡')) {
           finalRoute = '/credit-card';

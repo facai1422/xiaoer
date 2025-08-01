@@ -27,6 +27,9 @@ interface EnhancedProductFormProps {
   showBatchMode?: boolean;
   onSwitchToBatch?: () => void;
   batchButtonText?: string;
+  onSubmit?: () => void;
+  submitButtonText?: string;
+  isSubmitting?: boolean;
 }
 
 export const EnhancedProductForm = ({
@@ -38,7 +41,10 @@ export const EnhancedProductForm = ({
   quickAmounts = ["300", "500", "1000", "1500", "2000", "3000"],
   showBatchMode = false,
   onSwitchToBatch,
-  batchButtonText = "切换批量充值"
+  batchButtonText = "切换批量充值",
+  onSubmit,
+  submitButtonText = "确认充值",
+  isSubmitting = false
 }: EnhancedProductFormProps) => {
   const [selectedAmount, setSelectedAmount] = useState<string>("");
   const [filePreview, setFilePreview] = useState<{[key: string]: string}>({});
@@ -317,6 +323,19 @@ export const EnhancedProductForm = ({
           <div className="text-xs text-gray-500 text-center bg-blue-50 py-2 px-3 rounded">
             <span>💳 将从钱包余额扣除 {usdtAmount} USDT</span>
           </div>
+        </div>
+      )}
+
+      {/* 提交按钮 */}
+      {onSubmit && (
+        <div className="mt-6">
+          <Button
+            onClick={onSubmit}
+            disabled={isSubmitting || !amountField?.value}
+            className="w-full bg-[#1a237e] hover:bg-[#0d47a1] text-white py-3 h-12 text-lg font-medium"
+          >
+            {isSubmitting ? "提交中..." : submitButtonText}
+          </Button>
         </div>
       )}
 
