@@ -180,11 +180,11 @@ export const RechargeCards = () => {
   }
 
   return (
-    <div className="px-4 pt-4 pb-2">
-      <h2 className="text-lg font-medium mb-3">缴费充值</h2>
+    <div className="px-3 sm:px-4 pt-4 pb-2">
+      <h2 className="text-base sm:text-lg font-medium mb-3">缴费充值</h2>
       <div className="w-full">
         <div 
-          className="relative overflow-hidden"
+          className="relative overflow-hidden rounded-lg"
           ref={containerRef}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -195,27 +195,39 @@ export const RechargeCards = () => {
             style={{ transform: `translateX(-${currentPage * 100}%)` }}
           >
             {cards.map((card, index) => (
-              <div key={card.id} className="min-w-[50%] px-1.5 flex-shrink-0">
-                <Card className="p-4 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden aspect-square rounded-[2.5rem]">
+              <div key={card.id} className="min-w-[50%] px-2 flex-shrink-0">
+                <Card className="p-3 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden rounded-[2rem] h-[180px] sm:h-[200px] md:aspect-square">
                   <img 
                     src={card.image_url} 
                     alt={card.title} 
-                    className="absolute inset-0 w-full h-full object-cover rounded-[2.5rem]" 
+                    className="absolute inset-0 w-full h-full object-cover rounded-[2rem]" 
                   />
-                  <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+                  {/* 渐变遮罩，确保文字可读性 */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-[2rem]"></div>
+                  
+                  {/* 卡片标题 */}
+                  <div className="absolute top-3 left-3 right-3">
+                    <h3 className="text-white font-medium text-sm sm:text-base drop-shadow-lg">
+                      {card.title}
+                    </h3>
+                  </div>
+                  
+                  {/* 折扣信息 */}
+                  <div className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg">
+                    {card.discount}
+                  </div>
+                  
+                  {/* 充值按钮 */}
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-full px-3">
                     <Button 
-                      className="bg-[#6366f1] hover:bg-[#4f46e5] px-10 py-1 rounded-full text-sm" 
+                      className="bg-[#6366f1] hover:bg-[#4f46e5] rounded-full text-sm w-full py-2 shadow-lg" 
                       onClick={(e) => {
                         e.stopPropagation();
                         handleCardClick(card.route, card.title);
                       }}
                     >
-                      充值
+                      立即充值
                     </Button>
-                  </div>
-                  {/* 显示折扣信息 */}
-                  <div className="absolute top-4 right-4 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                    {card.discount}
                   </div>
                 </Card>
               </div>
