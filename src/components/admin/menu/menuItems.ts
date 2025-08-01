@@ -80,6 +80,10 @@ export const menuItems: MenuItem[] = [
       {
         title: "系统通知",
         path: "/admin/notices"
+      },
+      {
+        title: "首页公告管理",
+        path: "/admin/announcements"
       }
     ]
   },
