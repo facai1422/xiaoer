@@ -66,38 +66,47 @@ const AnnouncementsPage = () => {
     try {
       setIsLoading(true);
       
-      // 暂时使用模拟数据，后续连接数据库
-      const mockData: Announcement[] = [
-        {
-          id: 1,
-          title: "欢迎使用惠享生活平台",
-          content: "我们提供便捷的充值缴费服务，享受优惠折扣！",
-          type: "info",
-          is_active: true,
-          is_scrolling: true,
-          scroll_speed: 50,
-          display_order: 1,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: 2,
-          title: "新用户福利",
-          content: "新注册用户首次充值享受额外95折优惠！",
-          type: "success",
-          is_active: true,
-          is_scrolling: true,
-          scroll_speed: 50,
-          display_order: 2,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: 3,
-          title: "系统升级通知",
-          content: "为了提供更好的服务，系统将在每日凌晨2-4点进行维护",
-          type: "warning",
-          is_active: false,
+      // 从数据库获取公告数据
+      const { data, error } = await supabase
+        .from('website_announcements')
+        .select('*')
+        .order('display_order', { ascending: true })
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('获取公告失败:', error);
+        // 如果数据库查询失败，使用默认数据
+        const defaultData: Announcement[] = [
+          {
+            id: 1,
+            title: "欢迎使用惠享生活平台",
+            content: "我们提供便捷的充值缴费服务，享受优惠折扣！",
+            type: "info",
+            is_active: true,
+            is_scrolling: true,
+            scroll_speed: 50,
+            display_order: 1,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          {
+            id: 2,
+            title: "新用户福利",
+            content: "新注册用户首次充值享受额外95折优惠！",
+            type: "success",
+            is_active: true,
+            is_scrolling: true,
+            scroll_speed: 50,
+            display_order: 2,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          {
+            id: 3,
+            title: "系统升级通知",
+            content: "为了提供更好的服务，系统将在每日凌晨2-4点进行维护",
+            type: "warning",
+            is_active: false,
           is_scrolling: true,
           scroll_speed: 50,
           display_order: 3,
@@ -106,7 +115,27 @@ const AnnouncementsPage = () => {
         }
       ];
       
-      setAnnouncements(mockData);
+      setAnnouncements(defaultData);
+      return;
+      }
+
+      // 转换数据库数据为组件需要的格式
+      const announcements: Announcement[] = data.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        type: item.type,
+        is_active: item.is_active,
+        is_scrolling: item.is_scrolling,
+        scroll_speed: item.scroll_speed || 50,
+        display_order: item.display_order || 0,
+        start_time: item.start_time,
+        end_time: item.end_time,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
+      
+      setAnnouncements(announcements);
     } catch (error) {
       console.error('获取公告失败:', error);
       toast.error('获取公告失败');
@@ -125,33 +154,56 @@ const AnnouncementsPage = () => {
 
     try {
       if (editingAnnouncement) {
-        // 更新公告
-        const updatedAnnouncement: Announcement = {
-          ...editingAnnouncement,
-          ...formData,
-          updated_at: new Date().toISOString()
-        };
-        
-        setAnnouncements(prev => 
-          prev.map(item => 
-            item.id === editingAnnouncement.id ? updatedAnnouncement : item
-          )
-        );
+        // 更新公告到数据库
+        const { error } = await supabase
+          .from('website_announcements')
+          .update({
+            title: formData.title,
+            content: formData.content,
+            type: formData.type,
+            is_active: formData.is_active,
+            is_scrolling: formData.is_scrolling,
+            scroll_speed: formData.scroll_speed,
+            display_order: formData.display_order,
+            start_time: formData.start_time || null,
+            end_time: formData.end_time || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingAnnouncement.id);
+
+        if (error) {
+          throw error;
+        }
         
         toast.success('公告更新成功');
       } else {
-        // 创建新公告
-        const newAnnouncement: Announcement = {
-          id: Date.now(),
-          ...formData,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
+        // 创建新公告到数据库
+        const { error } = await supabase
+          .from('website_announcements')
+          .insert([{
+            title: formData.title,
+            content: formData.content,
+            type: formData.type,
+            is_active: formData.is_active,
+            is_scrolling: formData.is_scrolling,
+            scroll_speed: formData.scroll_speed,
+            display_order: formData.display_order,
+            start_time: formData.start_time || null,
+            end_time: formData.end_time || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }]);
+
+        if (error) {
+          throw error;
+        }
         
-        setAnnouncements(prev => [...prev, newAnnouncement]);
         toast.success('公告创建成功');
       }
 
+      // 重新获取数据
+      await fetchAnnouncements();
+      
       // 重置表单
       resetForm();
       setIsDialogOpen(false);
@@ -183,7 +235,18 @@ const AnnouncementsPage = () => {
     }
 
     try {
-      setAnnouncements(prev => prev.filter(item => item.id !== id));
+      // 从数据库删除公告
+      const { error } = await supabase
+        .from('website_announcements')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      // 重新获取数据
+      await fetchAnnouncements();
       toast.success('公告删除成功');
     } catch (error) {
       console.error('删除公告失败:', error);
@@ -193,13 +256,25 @@ const AnnouncementsPage = () => {
 
   const toggleActive = async (id: number) => {
     try {
-      setAnnouncements(prev =>
-        prev.map(item =>
-          item.id === id 
-            ? { ...item, is_active: !item.is_active, updated_at: new Date().toISOString() }
-            : item
-        )
-      );
+      // 找到当前公告
+      const currentAnnouncement = announcements.find(item => item.id === id);
+      if (!currentAnnouncement) return;
+
+      // 更新数据库
+      const { error } = await supabase
+        .from('website_announcements')
+        .update({
+          is_active: !currentAnnouncement.is_active,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      // 重新获取数据
+      await fetchAnnouncements();
       toast.success('公告状态更新成功');
     } catch (error) {
       console.error('更新公告状态失败:', error);

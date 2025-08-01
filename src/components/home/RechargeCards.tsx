@@ -5,6 +5,18 @@ import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
+interface RechargeCard {
+  id: number;
+  title: string;
+  discount: string;
+  discount_rate: number;
+  exchange_rate: number;
+  image_url: string;
+  route: string;
+  is_active: boolean;
+  display_order: number;
+}
+
 export const RechargeCards = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(0);
@@ -12,11 +24,14 @@ export const RechargeCards = () => {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [userBalance, setUserBalance] = useState<number | null>(null);
+  const [cards, setCards] = useState<RechargeCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 获取用户余额
-    const fetchUserBalance = async () => {
+    // 获取用户余额和充值卡片数据
+    const fetchData = async () => {
       try {
+        // 获取用户余额
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           const { data, error } = await supabase
@@ -29,40 +44,84 @@ export const RechargeCards = () => {
             setUserBalance(data.balance);
           }
         }
+
+        // 获取充值卡片数据
+        const { data: cardsData, error: cardsError } = await supabase
+          .from('homepage_recharge_cards')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (cardsError) {
+          console.error('获取充值卡片失败:', cardsError);
+          // 如果数据库查询失败，使用默认数据
+          setDefaultCards();
+        } else if (cardsData && cardsData.length > 0) {
+          setCards(cardsData);
+        } else {
+          // 如果没有数据，使用默认数据
+          setDefaultCards();
+        }
       } catch (error) {
-        console.error("Error fetching user balance:", error);
+        console.error("Error fetching data:", error);
+        setDefaultCards();
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    fetchUserBalance();
+    fetchData();
   }, []);
 
-  const cards = [
-    {
-      title: "普通话费充值",
-      discount: "85折充值",
-      image: "/lovable-uploads/IMG_2938.PNG",
-      route: "/mobile-recharge"
-    },
-    {
-      title: "高折扣话费",
-      discount: "75折充值",
-      image: "/lovable-uploads/IMG_2945.PNG",
-      route: "/mobile-recharge"
-    },
-    {
-      title: "南网电费充值",
-      discount: "80折充值",
-      image: "/lovable-uploads/IMG_2943.PNG",
-      route: "/utilities"
-    },
-    {
-      title: "网易游戏",
-      discount: "85折充值",
-      image: "/lovable-uploads/IMG_2941.PNG",
-      route: "/netease-game"
-    }
-  ];
+  const setDefaultCards = () => {
+    const defaultCards: RechargeCard[] = [
+      {
+        id: 1,
+        title: "普通话费充值",
+        discount: "85折充值",
+        discount_rate: 0.85,
+        exchange_rate: 7.2,
+        image_url: "/lovable-uploads/IMG_2938.PNG",
+        route: "/mobile-recharge",
+        is_active: true,
+        display_order: 1
+      },
+      {
+        id: 2,
+        title: "高折扣话费",
+        discount: "75折充值",
+        discount_rate: 0.75,
+        exchange_rate: 7.2,
+        image_url: "/lovable-uploads/IMG_2945.PNG",
+        route: "/mobile-recharge",
+        is_active: true,
+        display_order: 2
+      },
+      {
+        id: 3,
+        title: "南网电费充值",
+        discount: "80折充值",
+        discount_rate: 0.8,
+        exchange_rate: 7.2,
+        image_url: "/lovable-uploads/IMG_2943.PNG",
+        route: "/utilities",
+        is_active: true,
+        display_order: 3
+      },
+      {
+        id: 4,
+        title: "网易游戏",
+        discount: "85折充值",
+        discount_rate: 0.85,
+        exchange_rate: 7.2,
+        image_url: "/lovable-uploads/IMG_2941.PNG",
+        route: "/netease-game",
+        is_active: true,
+        display_order: 4
+      }
+    ];
+    setCards(defaultCards);
+  };
 
   const totalPages = Math.ceil(cards.length / 2);
 
@@ -108,6 +167,18 @@ export const RechargeCards = () => {
     setCurrentPage(index);
   };
 
+  if (isLoading) {
+    return (
+      <div className="px-4 pt-4 pb-2">
+        <h2 className="text-lg font-medium mb-3">缴费充值</h2>
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-2 text-gray-500">加载中...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 pt-4 pb-2">
       <h2 className="text-lg font-medium mb-3">缴费充值</h2>
@@ -124,10 +195,10 @@ export const RechargeCards = () => {
             style={{ transform: `translateX(-${currentPage * 100}%)` }}
           >
             {cards.map((card, index) => (
-              <div key={index} className="min-w-[50%] px-1.5 flex-shrink-0">
+              <div key={card.id} className="min-w-[50%] px-1.5 flex-shrink-0">
                 <Card className="p-4 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden aspect-square rounded-[2.5rem]">
                   <img 
-                    src={card.image} 
+                    src={card.image_url} 
                     alt={card.title} 
                     className="absolute inset-0 w-full h-full object-cover rounded-[2.5rem]" 
                   />
@@ -142,6 +213,10 @@ export const RechargeCards = () => {
                       充值
                     </Button>
                   </div>
+                  {/* 显示折扣信息 */}
+                  <div className="absolute top-4 right-4 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                    {card.discount}
+                  </div>
                 </Card>
               </div>
             ))}
@@ -149,18 +224,20 @@ export const RechargeCards = () => {
         </div>
         
         {/* 分页指示点 */}
-        <div className="flex justify-center mt-4 gap-2">
-          {Array.from({ length: totalPages }).map((_, index) => (
-            <button
-              key={index}
-              title={`跳转到第${index + 1}页`}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                currentPage === index ? 'bg-blue-600' : 'bg-gray-300'
-              }`}
-              onClick={() => handleDotClick(index)}
-            />
-          ))}
-        </div>
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-4 gap-2">
+            {Array.from({ length: totalPages }).map((_, index) => (
+              <button
+                key={index}
+                title={`跳转到第${index + 1}页`}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  currentPage === index ? 'bg-blue-600' : 'bg-gray-300'
+                }`}
+                onClick={() => handleDotClick(index)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -96,6 +96,10 @@ export const menuItems: MenuItem[] = [
         path: "/admin/business/templates"
       },
       {
+        title: "快速充值卡片",
+        path: "/admin/business/homepage-cards"
+      },
+      {
         title: "可配置服务",
         path: "/admin/business/configurable-services"
       }
